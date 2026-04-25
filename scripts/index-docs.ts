@@ -8,9 +8,12 @@ const openai = new OpenAI();
 const docsDir = path.resolve(process.env.DOCS_DIR ?? "../acton/docs/acton-guide/src");
 const vectorStoreName = process.env.VECTOR_STORE_NAME ?? "ask-acton-docs";
 const supportedExtensions = new Set([".act", ".md", ".txt"]);
+const existingVectorStoreId = process.env.OPENAI_VECTOR_STORE_ID?.trim();
 
 const vectorStoreId =
-  process.env.OPENAI_VECTOR_STORE_ID ?? (await openai.vectorStores.create({ name: vectorStoreName })).id;
+  existingVectorStoreId && existingVectorStoreId.length > 0
+    ? existingVectorStoreId
+    : (await openai.vectorStores.create({ name: vectorStoreName })).id;
 
 const files = await listFiles(docsDir);
 
@@ -47,6 +50,10 @@ async function listFiles(root: string): Promise<string[]> {
   const entries = await fs.promises.readdir(root, { withFileTypes: true });
   const paths = await Promise.all(
     entries.map(async (entry) => {
+      if (entry.name.startsWith(".")) {
+        return [];
+      }
+
       const entryPath = path.join(root, entry.name);
       if (entry.isDirectory()) {
         return listFiles(entryPath);
