@@ -13,11 +13,15 @@ const compileMarker = "__ACTON_PLAYGROUND_STAGE__:compile\n";
 const runMarker = "__ACTON_PLAYGROUND_STAGE__:run\n";
 const stageMarkers = [compileMarker, runMarker] as const;
 
+export function isPlaygroundAtCapacity(): boolean {
+  return activeRuns >= playgroundConfig.maxConcurrentRuns;
+}
+
 export async function runActonSnippet(
   request: PlaygroundRunRequest,
   onEvent?: PlaygroundRunEventHandler
 ): Promise<PlaygroundRunResponse> {
-  if (activeRuns >= playgroundConfig.maxConcurrentRuns) {
+  if (isPlaygroundAtCapacity()) {
     throw new Error("playground_busy");
   }
 
@@ -91,6 +95,7 @@ async function runInDocker(
 
   try {
     const exitCode = await waitForChild(child);
+    const timeout = timedOut || isTimeoutExit(exitCode);
     if (pendingStderr.length > 0) {
       const next = appendLimited(stderr, pendingStderr);
       stderr = next.value;
@@ -102,10 +107,10 @@ async function runInDocker(
     const durationMs = Date.now() - started;
     return {
       id,
-      status: timedOut ? "timeout" : exitCode === 0 ? "ok" : "error",
+      status: timeout ? "timeout" : exitCode === 0 ? "ok" : "error",
       exitCode,
       stdout,
-      stderr: timedOut ? withTimeoutMessage(stderr) : stderr,
+      stderr: timeout ? withTimeoutMessage(stderr) : stderr,
       durationMs,
       truncated
     };
@@ -160,7 +165,7 @@ function runnerCommand(scriptArgs: string[]): string {
   const timeout = playgroundConfig.timeoutSeconds;
   const script = [
     `printf ${shellQuote(compileMarker)} >&2`,
-    "acton --quiet --color never /workspace/main.act >&2",
+    "acton --quiet --color never --tempdir /tmp/acton-build /workspace/main.act >&2",
     "compile_status=$?",
     "if [ \"$compile_status\" -ne 0 ]; then exit \"$compile_status\"; fi",
     "if [ ! -x /workspace/main ]; then exit 1; fi",
@@ -168,7 +173,7 @@ function runnerCommand(scriptArgs: string[]): string {
     `exec /workspace/main ${quotedArgs}`
   ].join("\n");
 
-  return `timeout -s KILL ${timeout}s sh -lc ${shellQuote(script)}`;
+  return `timeout -s TERM -k 2s ${timeout}s sh -lc ${shellQuote(script)}`;
 }
 
 function shellQuote(value: string): string {
@@ -197,6 +202,10 @@ function waitForChild(child: ReturnType<typeof spawn>): Promise<number | null> {
     child.on("error", reject);
     child.on("close", (code) => resolve(code));
   });
+}
+
+function isTimeoutExit(exitCode: number | null): boolean {
+  return exitCode === 124 || exitCode === 137 || exitCode === 143;
 }
 
 function processStderr(

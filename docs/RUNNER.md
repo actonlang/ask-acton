@@ -17,16 +17,32 @@ Recommended shape:
 The first implementation uses Docker with no network, CPU/memory/PID
 limits, dropped Linux capabilities, `no-new-privileges`, a read-only
 container filesystem, and a temporary per-run workspace. The default
-limits allow one run at a time with a 90 second timeout and a 3 GiB
-container memory limit, because cold Acton compilation is currently the
-dominant cost.
+limits allow one compile/run at a time with a 15 second timeout and a
+3 GiB container memory limit. Additional requests are rejected with
+`playground_busy` instead of being queued indefinitely.
+
+The public API also has request rate limiting. The default is 10
+requests per minute per client IP, enforced by the Fastify service behind
+Caddy. The concurrency limit is separate from rate limiting: rate
+limiting controls request volume, while `PLAYGROUND_MAX_CONCURRENT_RUNS`
+controls how many Docker sandboxes may compile or run Acton code at the
+same time.
+
+There is no fixed service-level limit that prevents N concurrent runs.
+The safe value depends on the host and per-run Docker limits. The first
+VM has 4 vCPU and 4 GiB RAM, while each runner is allowed 2 CPUs and
+3 GiB RAM, so the live deployment intentionally starts at N=1. To run
+N=10, either use a substantially larger runner host or lower the per-run
+CPU and memory limits after measuring real Acton compile memory usage.
 
 Each snippet still runs in a fresh container, but the runner mounts a
 persistent cache directory as `/home/acton/.cache`. That preserves
 `~/.cache/acton` between runs, so the compiler can reuse downloaded and
 built dependency artifacts instead of starting from an empty cache for
 every request. The source workspace remains per-run and is removed after
-the request finishes.
+the request finishes. Compiler scratch files are directed to a per-run
+tmpfs directory with `--tempdir /tmp/acton-build`, so concurrent runs do
+not share the compiler's temporary build directory.
 
 The browser uses `POST /api/run/stream` for interactive runs. The
 endpoint returns newline-delimited JSON events for sandbox preparation,

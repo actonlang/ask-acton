@@ -8,7 +8,7 @@ import staticFiles from "@fastify/static";
 import Fastify from "fastify";
 import { z } from "zod";
 import { playgroundConfig } from "./playground-config.js";
-import { runActonSnippet } from "./playground-runner.js";
+import { isPlaygroundAtCapacity, runActonSnippet } from "./playground-runner.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicRoot = path.resolve(__dirname, "../../public/playground");
@@ -90,6 +90,16 @@ app.post("/api/run/stream", async (request, reply) => {
       requestId,
       details: z.treeifyError(parsed.error)
     });
+  }
+
+  if (isPlaygroundAtCapacity()) {
+    return reply
+      .code(429)
+      .header("retry-after", "5")
+      .send({
+        error: "playground_busy",
+        requestId
+      });
   }
 
   const stream = new PassThrough();

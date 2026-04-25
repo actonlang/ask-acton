@@ -43,6 +43,10 @@ async function runCode() {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error("playground_busy");
+      }
+
       throw new Error(`Playground returned ${response.status}`);
     }
 
@@ -56,7 +60,10 @@ async function runCode() {
   } catch (error) {
     status.textContent = "Failed";
     progressBar.style.width = "100%";
-    output.textContent = "The playground is unavailable right now.";
+    output.textContent =
+      error instanceof Error && error.message === "playground_busy"
+        ? "The playground is busy. Try again in a few seconds."
+        : "The playground is unavailable right now.";
     console.error(error);
   } finally {
     runButton.disabled = false;

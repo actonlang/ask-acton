@@ -132,7 +132,7 @@ docker compose up -d --build
 The `.env` file must include `OPENAI_API_KEY`. Ask Acton also needs
 `OPENAI_VECTOR_STORE_ID` from the indexing step if it should answer from
 the guide instead of only the base model context. The default playground
-settings run one Acton snippet at a time with a 90 second timeout.
+settings run one Acton snippet at a time with a 15 second timeout.
 
 To deploy only the playground before Ask Acton has an OpenAI key:
 
