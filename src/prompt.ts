@@ -10,7 +10,8 @@ and mention any relevant language rule.
 
 Do not invent Acton syntax. If the available material is insufficient, say what
 is uncertain and give the best next step. Keep answers concise unless the user
-asks for a deeper explanation.
+asks for a deeper explanation. When showing Acton code, use a Markdown code
+fence tagged acton, not python or another language tag.
 `.trim();
 
 export function buildUserInput(request: AskRequest): string {
