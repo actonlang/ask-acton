@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-user-text-contrast";
+const assetVersion = "20260425-guide-source-links";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -650,12 +650,27 @@ button:disabled {
 }
 
 #sources li {
+  display: flex;
+}
+
+#sources a,
+#sources span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0.35rem 0.7rem;
   color: var(--muted);
   background: rgba(255, 212, 42, 0.12);
   font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+#sources a:hover {
+  border-color: rgba(255, 212, 42, 0.7);
+  color: var(--text);
 }
 
 [hidden] {
@@ -1069,13 +1084,38 @@ function renderAnswer(data) {
 
 function renderSources(data) {
   const citations = Array.isArray(data.citations) ? data.citations : [];
-  const filenames = citations
-    .map((citation) => citation.filename || citation.fileId)
-    .filter(Boolean);
+  const sources = [];
+  const seen = new Set();
 
-  for (const filename of new Set(filenames)) {
+  for (const citation of citations) {
+    const label = citation.label || citation.path || citation.filename || citation.fileId;
+    const url = citation.url;
+
+    if (!label) {
+      continue;
+    }
+
+    const key = url || label;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    sources.push({ label, url });
+  }
+
+  for (const source of sources) {
     const item = document.createElement("li");
-    item.textContent = filename;
+    if (source.url) {
+      const link = document.createElement("a");
+      link.href = source.url;
+      link.textContent = source.label;
+      link.rel = "noopener";
+      item.append(link);
+    } else {
+      const label = document.createElement("span");
+      label.textContent = source.label;
+      item.append(label);
+    }
     sourcesList.append(item);
   }
 

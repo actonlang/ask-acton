@@ -22,6 +22,9 @@ export interface AskRequest {
 export interface SourceCitation {
   fileId?: string;
   filename?: string;
+  path?: string;
+  label?: string;
+  url?: string;
   index?: number;
 }
 

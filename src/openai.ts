@@ -8,6 +8,9 @@ const client = new OpenAI({
   apiKey: config.openaiApiKey
 });
 
+const guideBaseUrl = "https://acton.guide/";
+const citationMetadataCache = new Map<string, Promise<Partial<SourceCitation>>>();
+
 export async function answerQuestion(request: AskRequest, requestId: string): Promise<AskResponse> {
   const response = await client.responses.create({
     ...responseParams(request),
@@ -18,7 +21,7 @@ export async function answerQuestion(request: AskRequest, requestId: string): Pr
     answer: response.output_text.trim(),
     model: config.openaiModel,
     requestId,
-    citations: collectCitations(response)
+    citations: await collectCitations(response)
   };
 }
 
@@ -49,7 +52,7 @@ export async function* streamQuestion(
     answer: answer.trim(),
     model: config.openaiModel,
     requestId,
-    citations: collectCitations(response)
+    citations: await collectCitations(response)
   };
 }
 
@@ -100,7 +103,7 @@ function sanitizeHistory(history: ChatMessage[]): ChatMessage[] {
     }));
 }
 
-function collectCitations(response: OpenAI.Responses.Response): SourceCitation[] {
+async function collectCitations(response: OpenAI.Responses.Response): Promise<SourceCitation[]> {
   const citations: SourceCitation[] = [];
 
   for (const item of response.output) {
@@ -127,7 +130,7 @@ function collectCitations(response: OpenAI.Responses.Response): SourceCitation[]
     }
   }
 
-  return dedupeCitations(citations);
+  return enrichCitations(dedupeCitations(citations));
 }
 
 function dedupeCitations(citations: SourceCitation[]): SourceCitation[] {
@@ -144,4 +147,99 @@ function dedupeCitations(citations: SourceCitation[]): SourceCitation[] {
   }
 
   return deduped;
+}
+
+async function enrichCitations(citations: SourceCitation[]): Promise<SourceCitation[]> {
+  return Promise.all(
+    citations.map(async (citation) => {
+      const metadata = citation.fileId ? await citationMetadata(citation.fileId) : {};
+      const sourcePath = metadata.path ?? citation.filename;
+      const guideUrl =
+        typeof sourcePath === "string" && isLinkableSourcePath(sourcePath, metadata.path)
+          ? guideUrlForSourcePath(sourcePath)
+          : undefined;
+      const guideLabel = typeof sourcePath === "string" ? guideLabelForSourcePath(sourcePath) : undefined;
+
+      return {
+        ...citation,
+        ...metadata,
+        label: guideLabel ?? metadata.label ?? citation.filename ?? citation.fileId,
+        url: guideUrl ?? metadata.url
+      };
+    })
+  );
+}
+
+function citationMetadata(fileId: string): Promise<Partial<SourceCitation>> {
+  const cached = citationMetadataCache.get(fileId);
+  if (cached) {
+    return cached;
+  }
+
+  const metadata = loadCitationMetadata(fileId);
+  citationMetadataCache.set(fileId, metadata);
+  return metadata;
+}
+
+async function loadCitationMetadata(fileId: string): Promise<Partial<SourceCitation>> {
+  if (!config.openaiVectorStoreId) {
+    return {};
+  }
+
+  try {
+    const vectorFile = await client.vectorStores.files.retrieve(fileId, {
+      vector_store_id: config.openaiVectorStoreId
+    });
+    const sourcePath = vectorFile.attributes?.path;
+
+    if (typeof sourcePath !== "string" || sourcePath.length === 0) {
+      return {};
+    }
+
+    return {
+      path: sourcePath,
+      label: guideLabelForSourcePath(sourcePath),
+      url: guideUrlForSourcePath(sourcePath)
+    };
+  } catch (error) {
+    console.warn(`Could not resolve citation metadata for ${fileId}:`, error);
+    return {};
+  }
+}
+
+function guideUrlForSourcePath(sourcePath: string): string | undefined {
+  const normalizedPath = normalizeSourcePath(sourcePath);
+
+  if (normalizedPath === "SUMMARY.md") {
+    return undefined;
+  }
+
+  if (!normalizedPath.endsWith(".md")) {
+    return undefined;
+  }
+
+  return new URL(normalizedPath.replace(/\.md$/, ".html"), guideBaseUrl).toString();
+}
+
+function guideLabelForSourcePath(sourcePath: string): string | undefined {
+  const normalizedPath = normalizeSourcePath(sourcePath);
+  const guidePath = normalizedPath.endsWith(".md") ? normalizedPath.replace(/\.md$/, ".html") : normalizedPath;
+
+  if (guidePath === "SUMMARY.html") {
+    return undefined;
+  }
+
+  return guidePath;
+}
+
+function isLinkableSourcePath(sourcePath: string, metadataPath: unknown): boolean {
+  return typeof metadataPath === "string" || sourcePath.includes("/") || sourcePath.includes("\\");
+}
+
+function normalizeSourcePath(sourcePath: string): string {
+  return sourcePath
+    .replace(/\\/g, "/")
+    .replace(/^.*\/docs\/acton-guide\/src\//, "")
+    .replace(/^.*\/acton-guide\/src\//, "")
+    .replace(/^\/+/, "");
 }
