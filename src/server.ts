@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-site-nav";
+const assetVersion = "20260425-nav-align";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -144,6 +144,7 @@ const askPageCss = `
   --accent-text: #151617;
   --code-bg: #f4f4f1;
   --error: #aa2c2c;
+  --chrome-bg: #202326;
   --shadow: 0 18px 45px rgba(21, 22, 23, 0.12);
   font-family:
     "Avenir Next",
@@ -180,7 +181,7 @@ main {
   min-height: 3.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding: 0 1rem;
-  background: #202326;
+  background: var(--chrome-bg);
   color: #f7f8f6;
 }
 
@@ -203,8 +204,8 @@ main {
   display: inline-flex;
   align-items: center;
   padding: 0 0.85rem;
-  color: #c8cdd0;
-  font-size: 0.82rem;
+  color: var(--accent);
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-decoration: none;
@@ -773,6 +774,7 @@ button:disabled {
     --accent-text: #151617;
     --code-bg: #1a1c1d;
     --error: #ff8c8c;
+    --chrome-bg: #111213;
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
   }
 

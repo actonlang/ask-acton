@@ -17,14 +17,12 @@
     </header>
 
     <main class="playground">
+      <div class="playground__toolbar">
+        <p>Runs are limited to 15 seconds.</p>
+        <button id="run" type="button">Run</button>
+      </div>
+
       <section class="playground__editor">
-        <header>
-          <div>
-            <p>Acton Playground</p>
-            <small>Runs are limited to 15 seconds.</small>
-          </div>
-          <button id="run" type="button">Run</button>
-        </header>
         <div class="editor-frame">
           <pre id="line-numbers" aria-hidden="true">1</pre>
           <textarea id="code" spellcheck="false" wrap="off">actor main(env):

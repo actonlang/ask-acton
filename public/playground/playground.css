@@ -17,6 +17,7 @@
   --progress-bg: #dfe2e3;
   --progress-fill-start: #ffd42a;
   --progress-fill-end: #9c7412;
+  --chrome-bg: #202326;
   --shadow: 0 18px 45px rgba(21, 22, 23, 0.12);
 }
 
@@ -40,6 +41,7 @@
     --progress-fill-start: #ffd42a;
     --progress-fill-end: #ffe15d;
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    --chrome-bg: #111213;
   }
 }
 
@@ -69,7 +71,7 @@ body {
   min-height: 3.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding: 0 1rem;
-  background: #202326;
+  background: var(--chrome-bg, #202326);
   color: #f7f8f6;
 }
 
@@ -92,8 +94,8 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 0 0.85rem;
-  color: #c8cdd0;
-  font-size: 0.82rem;
+  color: var(--accent);
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-decoration: none;
@@ -128,6 +130,26 @@ body {
   padding: 1rem;
 }
 
+.playground__toolbar {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.playground__toolbar p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 650;
+}
+
 .playground__editor,
 .playground__output {
   display: grid;
@@ -140,7 +162,7 @@ body {
 }
 
 .playground__editor {
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
 }
 
 .playground__output {
@@ -279,7 +301,7 @@ pre {
 
   .playground {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(24rem, 1fr) minmax(16rem, 0.7fr);
+    grid-template-rows: auto minmax(24rem, 1fr) minmax(16rem, 0.7fr);
     min-height: calc(100vh - 6.1rem);
   }
 
