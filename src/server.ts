@@ -94,11 +94,25 @@ const askPageHtml = `<!doctype html>
             </button>
           </div>
 
+          <div class="task-instruction" aria-live="polite">
+            <span>Task</span>
+            <p id="task-instruction">Answer the question or request directly.</p>
+          </div>
+
           <div class="actions">
             <button id="ask-button" type="submit">Ask Acton</button>
             <p id="status" role="status" aria-live="polite"></p>
           </div>
         </form>
+      </section>
+
+      <section id="progress-panel" class="card progress-card" aria-live="polite" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <div>
+          <h2>Working on it</h2>
+          <p id="progress-message">Preparing the request...</p>
+          <p id="elapsed-time">0 seconds elapsed</p>
+        </div>
       </section>
 
       <section id="answer-panel" class="card answer-card" aria-live="polite" hidden>
@@ -285,6 +299,10 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 1.15rem;
+  padding: 0.45rem;
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .actions {
@@ -311,24 +329,54 @@ button:hover {
 }
 
 .task-button {
-  min-height: 2.35rem;
-  border: 1px solid rgba(29, 122, 71, 0.28);
-  padding: 0 0.9rem;
+  min-height: 2.45rem;
+  border: 1px solid transparent;
+  padding: 0 1rem;
   color: var(--accent-strong);
-  background: rgba(29, 122, 71, 0.09);
+  background: transparent;
   font-size: 0.92rem;
   font-weight: 720;
 }
 
 .task-button:hover {
-  border-color: rgba(29, 122, 71, 0.5);
-  background: rgba(29, 122, 71, 0.15);
+  background: rgba(29, 122, 71, 0.09);
 }
 
 .task-button.active {
-  border-color: rgba(29, 122, 71, 0.72);
-  color: var(--accent-text);
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border-color: rgba(29, 122, 71, 0.45);
+  color: var(--accent-strong);
+  background: var(--bg-soft);
+  box-shadow: 0 8px 24px rgba(31, 68, 45, 0.12);
+}
+
+.task-button.active::before {
+  content: "✓";
+  margin-right: 0.4rem;
+}
+
+.task-instruction {
+  margin-top: 0.8rem;
+  border: 1px solid rgba(29, 122, 71, 0.2);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(29, 122, 71, 0.07);
+}
+
+.task-instruction span {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.task-instruction p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.96rem;
+  line-height: 1.45;
 }
 
 button:disabled {
@@ -346,8 +394,44 @@ button:disabled {
   color: var(--error);
 }
 
+.progress-card,
 .answer-card {
   margin-top: 1.5rem;
+}
+
+.progress-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.progress-card h2 {
+  margin-bottom: 0.35rem;
+}
+
+.progress-card p {
+  margin: 0;
+}
+
+#elapsed-time {
+  margin-top: 0.25rem;
+  font-size: 0.92rem;
+}
+
+.spinner {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  border: 4px solid rgba(29, 122, 71, 0.16);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #answer-text {
@@ -506,6 +590,15 @@ button:disabled {
   .card {
     background: rgba(12, 24, 17, 0.78);
   }
+
+  .task-row {
+    background: rgba(12, 24, 17, 0.5);
+  }
+
+  .task-button.active {
+    background: rgba(71, 201, 121, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  }
 }
 `.trim();
 
@@ -514,20 +607,33 @@ const form = document.querySelector("#ask-form");
 const askInput = document.querySelector("#ask-input");
 const askButton = document.querySelector("#ask-button");
 const statusText = document.querySelector("#status");
+const taskInstruction = document.querySelector("#task-instruction");
+const progressPanel = document.querySelector("#progress-panel");
+const progressMessage = document.querySelector("#progress-message");
+const elapsedTime = document.querySelector("#elapsed-time");
 const answerPanel = document.querySelector("#answer-panel");
 const answerText = document.querySelector("#answer-text");
 const sourcesPanel = document.querySelector("#sources-panel");
 const sourcesList = document.querySelector("#sources");
 let selectedMode = "ask";
+let progressTimer;
+let progressStartedAt = 0;
+const progressMessages = [
+  "Reading your prompt...",
+  "Searching the Acton material...",
+  "Preparing an answer...",
+  "Still working..."
+];
+const taskInstructions = {
+  ask: "Answer the question or request directly.",
+  error: "Explain this Acton error and show the smallest useful fix.",
+  code: "Review this Acton code and point out likely issues.",
+  concept: "Explain this Acton concept with a small example."
+};
 
 document.querySelectorAll(".task-button").forEach((button) => {
   button.addEventListener("click", () => {
-    selectedMode = button.dataset.mode || "ask";
-    document.querySelectorAll(".task-button").forEach((taskButton) => {
-      const active = taskButton === button;
-      taskButton.classList.toggle("active", active);
-      taskButton.setAttribute("aria-pressed", active ? "true" : "false");
-    });
+    setSelectedMode(button.dataset.mode || "ask");
     askInput.focus();
   });
 });
@@ -543,6 +649,7 @@ form.addEventListener("submit", async (event) => {
 
   setLoading(true);
   setStatus("Asking Acton...");
+  showProgress();
   answerPanel.hidden = true;
   answerText.replaceChildren();
   sourcesList.replaceChildren();
@@ -567,6 +674,7 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Ask Acton failed.", true);
   } finally {
+    hideProgress();
     setLoading(false);
   }
 });
@@ -581,25 +689,57 @@ function readPayload() {
 
   if (selectedMode === "error") {
     return {
-      question: "Explain this Acton error and show the smallest useful fix.",
+      question: taskInstructions.error,
       error: input
     };
   }
 
   if (selectedMode === "code") {
     return {
-      question: "Review this Acton code and point out likely issues.",
+      question: taskInstructions.code,
       code: input
     };
   }
 
   if (selectedMode === "concept") {
     return {
-      question: "Explain this Acton concept with a small example:\\n\\n" + input
+      question: taskInstructions.concept + "\\n\\n" + input
     };
   }
 
   return { question: input };
+}
+
+function setSelectedMode(mode) {
+  selectedMode = taskInstructions[mode] ? mode : "ask";
+  document.querySelectorAll(".task-button").forEach((taskButton) => {
+    const active = taskButton.dataset.mode === selectedMode;
+    taskButton.classList.toggle("active", active);
+    taskButton.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  taskInstruction.textContent = taskInstructions[selectedMode];
+}
+
+function showProgress() {
+  progressStartedAt = Date.now();
+  progressPanel.hidden = false;
+  updateProgress();
+  progressTimer = window.setInterval(updateProgress, 1000);
+}
+
+function hideProgress() {
+  if (progressTimer) {
+    window.clearInterval(progressTimer);
+    progressTimer = undefined;
+  }
+  progressPanel.hidden = true;
+}
+
+function updateProgress() {
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - progressStartedAt) / 1000));
+  const messageIndex = Math.min(progressMessages.length - 1, Math.floor(elapsedSeconds / 6));
+  progressMessage.textContent = progressMessages[messageIndex];
+  elapsedTime.textContent = elapsedSeconds === 1 ? "1 second elapsed" : elapsedSeconds + " seconds elapsed";
 }
 
 function renderAnswer(data) {
