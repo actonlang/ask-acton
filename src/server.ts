@@ -490,6 +490,11 @@ button:disabled {
   margin-left: clamp(0rem, 8vw, 6rem);
   border-color: rgba(156, 116, 18, 0.22);
   background: linear-gradient(180deg, #fff7cf, var(--accent-soft));
+  color: #151617;
+}
+
+.message--user .message__header {
+  color: #5d4810;
 }
 
 .message--assistant {
