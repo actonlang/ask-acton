@@ -630,6 +630,12 @@ const taskInstructions = {
   code: "Review this Acton code and point out likely issues.",
   concept: "Explain this Acton concept with a small example."
 };
+const taskPlaceholders = {
+  ask: "Ask a question, paste Acton code, or paste compiler output...",
+  error: "Paste the error message and preferably relevant source code...",
+  code: "Paste the Acton code you want reviewed...",
+  concept: "Write the Acton concept you want explained..."
+};
 
 document.querySelectorAll(".task-button").forEach((button) => {
   button.addEventListener("click", () => {
@@ -718,6 +724,7 @@ function setSelectedMode(mode) {
     taskButton.setAttribute("aria-pressed", active ? "true" : "false");
   });
   taskInstruction.textContent = taskInstructions[selectedMode];
+  askInput.placeholder = taskPlaceholders[selectedMode];
 }
 
 function showProgress() {
