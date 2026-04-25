@@ -33,7 +33,7 @@ body {
 .playground__editor,
 .playground__output {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -96,6 +96,52 @@ textarea {
 pre {
   overflow: auto;
   white-space: pre-wrap;
+}
+
+.progress {
+  height: 0.35rem;
+  background: #dce8df;
+}
+
+.progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2da66d, #237bd3);
+  transition: width 180ms ease;
+}
+
+.output-streams {
+  display: grid;
+  grid-template-rows: minmax(12rem, 0.95fr) minmax(10rem, 0.8fr);
+  min-height: 0;
+  background: var(--code-bg);
+}
+
+.output-stream {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  border-top: 1px solid rgba(232, 243, 236, 0.16);
+}
+
+.output-stream:first-child {
+  border-top: 0;
+}
+
+.output-stream h2 {
+  margin: 0;
+  padding: 0.55rem 1rem;
+  background: rgba(232, 243, 236, 0.06);
+  color: #a9c5b4;
+  font: 700 0.78rem/1.2 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.output-stream pre {
+  min-height: 0;
 }
 
 #status {

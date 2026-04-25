@@ -28,6 +28,13 @@ built dependency artifacts instead of starting from an empty cache for
 every request. The source workspace remains per-run and is removed after
 the request finishes.
 
+The browser uses `POST /api/run/stream` for interactive runs. The
+endpoint returns newline-delimited JSON events for sandbox preparation,
+compilation, execution, compiler output, program stdout/stderr, and the
+final result. The compiler is invoked as `acton --color never --timing`
+instead of through `runacton`, because `runacton` intentionally passes
+`--quiet` and would hide useful progress output.
+
 Requirements before enabling it broadly:
 
 - Run each snippet in a fresh container or stronger isolation boundary.

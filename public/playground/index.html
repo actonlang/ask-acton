@@ -24,7 +24,19 @@
           <p>Output</p>
           <span id="status">Ready</span>
         </header>
-        <pre id="output"></pre>
+        <div class="progress" aria-hidden="true">
+          <span id="progress-bar"></span>
+        </div>
+        <div class="output-streams">
+          <section class="output-stream">
+            <h2>Compiler</h2>
+            <pre id="compiler-output"></pre>
+          </section>
+          <section class="output-stream">
+            <h2>Program</h2>
+            <pre id="program-output"></pre>
+          </section>
+        </div>
       </section>
     </main>
 
