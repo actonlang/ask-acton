@@ -17,9 +17,9 @@ Recommended shape:
 The first implementation uses Docker with no network, CPU/memory/PID
 limits, dropped Linux capabilities, `no-new-privileges`, a read-only
 container filesystem, and a temporary per-run workspace. The default
-limits allow one compile/run at a time with a 15 second timeout and a
-3 GiB container memory limit. Additional requests are rejected with
-`playground_busy` instead of being queued indefinitely.
+limits allow 10 active compile/run tasks with a 15 second timeout and a
+3 GiB container memory limit per task. Additional requests are rejected
+with `playground_busy` instead of being queued indefinitely.
 
 The public API also has request rate limiting. The default is 10
 requests per minute per client IP, enforced by the Fastify service behind
@@ -29,11 +29,11 @@ controls how many Docker sandboxes may compile or run Acton code at the
 same time.
 
 There is no fixed service-level limit that prevents N concurrent runs.
-The safe value depends on the host and per-run Docker limits. The first
-VM has 4 vCPU and 4 GiB RAM, while each runner is allowed 2 CPUs and
-3 GiB RAM, so the live deployment intentionally starts at N=1. To run
-N=10, either use a substantially larger runner host or lower the per-run
-CPU and memory limits after measuring real Acton compile memory usage.
+The safe value depends on the host, the expected snippets, and the
+per-run Docker limits. The first VM has 4 vCPU and 4 GiB RAM, so N=10 is
+an optimistic public default based on short snippets and a 15 second
+wall-clock limit. If the host shows memory or CPU pressure, lower
+`PLAYGROUND_MAX_CONCURRENT_RUNS` first.
 
 Each snippet still runs in a fresh container, but the runner mounts a
 persistent cache directory as `/home/acton/.cache`. That preserves

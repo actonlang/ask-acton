@@ -29,9 +29,9 @@ terminal or chat session.
 ## VM Size
 
 The default VM starts at 4 vCPU, 4 GiB RAM, and 50 GiB disk. That is
-mostly for the playground. Ask Acton itself is small, but cold Acton
-snippet compilation needs a larger memory budget and should start with
-one concurrent run.
+mostly for the playground. Ask Acton itself is small, but Acton snippet
+compilation and execution need bounded CPU, memory, concurrency, and
+wall-clock limits.
 
 ## State
 

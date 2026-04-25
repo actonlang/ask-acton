@@ -62,7 +62,7 @@ async function runCode() {
     progressBar.style.width = "100%";
     output.textContent =
       error instanceof Error && error.message === "playground_busy"
-        ? "The playground is busy. Try again in a few seconds."
+        ? "The playground is busy. Runs are not queued, so try again in a few seconds."
         : "The playground is unavailable right now.";
     console.error(error);
   } finally {

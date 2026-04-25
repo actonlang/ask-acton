@@ -92,6 +92,13 @@ header p {
   font-weight: 700;
 }
 
+header small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 button {
   border: 0;
   border-radius: 0.45rem;

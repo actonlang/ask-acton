@@ -13,7 +13,7 @@ const envSchema = z.object({
   PLAYGROUND_MAX_STDIN_CHARS: z.coerce.number().int().nonnegative().default(4000),
   PLAYGROUND_MAX_OUTPUT_CHARS: z.coerce.number().int().positive().default(20000),
   PLAYGROUND_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(90),
-  PLAYGROUND_MAX_CONCURRENT_RUNS: z.coerce.number().int().positive().default(1),
+  PLAYGROUND_MAX_CONCURRENT_RUNS: z.coerce.number().int().positive().default(10),
   PLAYGROUND_WORKSPACE_ROOT: z.string().default("/var/lib/ask-acton/playground"),
   PLAYGROUND_CACHE_ROOT: z.string().default("/var/lib/ask-acton/cache"),
   PLAYGROUND_DOCKER_BIN: z.string().default("docker"),
