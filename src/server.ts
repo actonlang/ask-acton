@@ -732,6 +732,12 @@ function showProgress() {
   progressPanel.hidden = false;
   updateProgress();
   progressTimer = window.setInterval(updateProgress, 1000);
+  window.requestAnimationFrame(() => {
+    progressPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  });
 }
 
 function hideProgress() {
@@ -765,6 +771,12 @@ function renderAnswer(data) {
   }
 
   sourcesPanel.hidden = sourcesList.childElementCount === 0;
+  window.requestAnimationFrame(() => {
+    answerPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
 }
 
 function setLoading(loading) {
