@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -eu
+
+image="${TOFU_IMAGE:-ghcr.io/opentofu/opentofu:latest}"
+repo_root="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+plugin_cache="${repo_root}/.terraform.d/plugin-cache"
+tty_flag=""
+
+if [ -t 0 ] && [ -t 1 ]; then
+  tty_flag="-it"
+fi
+
+mkdir -p "$plugin_cache"
+
+exec docker run --rm ${tty_flag:+$tty_flag} \
+  --user "$(id -u):$(id -g)" \
+  -e GLESYS_USERID \
+  -e GLESYS_TOKEN \
+  -e TF_PLUGIN_CACHE_DIR=/workspace/.terraform.d/plugin-cache \
+  -v "${repo_root}:/workspace" \
+  -w /workspace \
+  "$image" "$@"

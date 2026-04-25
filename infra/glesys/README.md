@@ -21,10 +21,14 @@ ssh_public_keys = [
 Then run:
 
 ```sh
-terraform init
-terraform plan
-terraform apply
+../../scripts/tofu init
+../../scripts/tofu plan
+../../scripts/tofu apply
 ```
+
+The wrapper runs OpenTofu in Docker, so OpenTofu does not need to be
+installed locally. It passes through `GLESYS_USERID` and `GLESYS_TOKEN`
+from the host environment.
 
 The provider and exact template names should be checked against the
 GleSYS project before applying. The defaults are sized for the first

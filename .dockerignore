@@ -5,6 +5,7 @@ dist
 .env.*
 !.env.example
 .terraform
+.terraform.d
 *.tfstate
 *.tfstate.*
 terraform.tfvars

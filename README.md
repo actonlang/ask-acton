@@ -94,6 +94,15 @@ docker compose up -d --build
 Point `ask.acton.guide` and `play.acton.guide` at the VM before
 starting Caddy so it can issue TLS certificates.
 
+Provisioning can be driven with OpenTofu through Docker:
+
+```sh
+export GLESYS_USERID=...
+export GLESYS_TOKEN=...
+./scripts/tofu -chdir=infra/glesys init
+./scripts/tofu -chdir=infra/glesys plan
+```
+
 ## Playground Runner
 
 The same VM hosts the first Acton playground, but it is a separate

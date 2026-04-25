@@ -15,3 +15,14 @@ The default Terraform VM starts at 4 vCPU, 4 GiB RAM, and 50 GiB disk.
 That is mostly for the playground. Ask Acton itself is small, but cold
 Acton snippet compilation needs a larger memory budget and should start
 with one concurrent run.
+
+OpenTofu can be run through Docker:
+
+```sh
+./scripts/tofu -chdir=infra/glesys init
+./scripts/tofu -chdir=infra/glesys plan
+./scripts/tofu -chdir=infra/glesys apply
+```
+
+Set `GLESYS_USERID` and `GLESYS_TOKEN` in the shell before running
+`plan` or `apply`.
