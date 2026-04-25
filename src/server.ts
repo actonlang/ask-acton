@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-guide-source-links";
+const assetVersion = "20260425-site-switcher";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -62,9 +62,10 @@ const askPageHtml = `<!doctype html>
           Ask a question about Acton, or paste Acton code and compiler output
           for a more specific answer.
         </p>
-        <nav aria-label="Related Acton sites">
-          <a href="https://acton.guide/">Acton Guide</a>
-          <a href="https://play.acton.guide/">Acton Playground</a>
+        <nav class="site-switcher" aria-label="Acton sites">
+          <a href="https://acton.guide/">Guide</a>
+          <a href="https://play.acton.guide/">Play</a>
+          <a class="is-active" href="https://ask.acton.guide/" aria-current="page">Ask</a>
         </nav>
       </section>
 
@@ -213,28 +214,40 @@ p {
   line-height: 1.6;
 }
 
-nav {
+.site-switcher {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.35rem;
   margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.38);
+  width: fit-content;
 }
 
-a {
+.site-switcher a,
+#sources a {
   display: inline-flex;
   align-items: center;
   min-height: 2.5rem;
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 0 1rem;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.52);
   font-weight: 750;
   text-decoration: none;
 }
 
-a:hover {
+.site-switcher a:hover,
+#sources a:hover {
   border-color: rgba(255, 212, 42, 0.7);
+}
+
+.site-switcher a.is-active {
+  border-color: rgba(156, 116, 18, 0.28);
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 .card {
@@ -722,9 +735,16 @@ button:disabled {
       linear-gradient(180deg, #151617, #202326 45%, #17191a);
   }
 
-  a,
   .card {
     background: var(--panel);
+  }
+
+  .site-switcher {
+    background: rgba(21, 22, 23, 0.58);
+  }
+
+  .site-switcher a:not(.is-active) {
+    background: rgba(32, 35, 38, 0.58);
   }
 
   .task-row {
