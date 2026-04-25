@@ -28,6 +28,7 @@ async function runInDocker(request: PlaygroundRunRequest): Promise<PlaygroundRun
   const started = Date.now();
 
   await fs.mkdir(workspace, { recursive: true, mode: 0o700 });
+  await fs.mkdir(playgroundConfig.cacheRoot, { recursive: true, mode: 0o700 });
   await fs.writeFile(sourcePath, request.code, { mode: 0o600 });
 
   const containerName = `acton-playground-${id}`;
@@ -103,6 +104,10 @@ function dockerArgs(containerName: string, workspace: string, scriptArgs: string
     "/home/acton:rw,exec,nosuid,nodev,size=512m",
     "-e",
     "HOME=/home/acton",
+    "-e",
+    "XDG_CACHE_HOME=/home/acton/.cache",
+    "-v",
+    `${playgroundConfig.cacheRoot}:/home/acton/.cache:rw`,
     "-v",
     `${workspace}:/workspace:rw`,
     "-w",

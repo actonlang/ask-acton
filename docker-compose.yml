@@ -21,6 +21,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/ask-acton/playground:/var/lib/ask-acton/playground
+      - /var/lib/ask-acton/cache:/var/lib/ask-acton/cache
 
   caddy:
     image: caddy:2

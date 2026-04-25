@@ -21,6 +21,13 @@ limits allow one run at a time with a 90 second timeout and a 3 GiB
 container memory limit, because cold Acton compilation is currently the
 dominant cost.
 
+Each snippet still runs in a fresh container, but the runner mounts a
+persistent cache directory as `/home/acton/.cache`. That preserves
+`~/.cache/acton` between runs, so the compiler can reuse downloaded and
+built dependency artifacts instead of starting from an empty cache for
+every request. The source workspace remains per-run and is removed after
+the request finishes.
+
 Requirements before enabling it broadly:
 
 - Run each snippet in a fresh container or stronger isolation boundary.
