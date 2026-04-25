@@ -106,15 +106,6 @@ const askPageHtml = `<!doctype html>
         </form>
       </section>
 
-      <section id="progress-panel" class="card progress-card" aria-live="polite" hidden>
-        <div class="spinner" aria-hidden="true"></div>
-        <div>
-          <h2>Working on it</h2>
-          <p id="progress-message">Preparing the request...</p>
-          <p id="elapsed-time">0 seconds elapsed</p>
-        </div>
-      </section>
-
       <section id="answer-panel" class="card answer-card" aria-live="polite" hidden>
         <h2>Conversation</h2>
         <div id="messages" class="messages" role="log" aria-live="polite"></div>
@@ -432,27 +423,33 @@ button:disabled {
   display: none;
 }
 
-.progress-card,
 .answer-card {
   margin-top: 1.5rem;
 }
 
-.progress-card {
+.progress-message {
   display: flex;
   align-items: center;
   gap: 1rem;
+  margin-right: clamp(0rem, 8vw, 6rem);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(29, 122, 71, 0.07);
 }
 
-.progress-card h2 {
+.progress-message h3 {
   margin-bottom: 0.35rem;
+  font-size: 1rem;
 }
 
-.progress-card p {
+.progress-message p {
   margin: 0;
 }
 
-#elapsed-time {
+.progress-message__elapsed {
   margin-top: 0.25rem;
+  color: var(--muted);
   font-size: 0.92rem;
 }
 
@@ -639,7 +636,8 @@ button:disabled {
   }
 
   .message--user,
-  .message--assistant {
+  .message--assistant,
+  .progress-message {
     margin-left: 0;
     margin-right: 0;
   }
@@ -689,9 +687,6 @@ const askButton = document.querySelector("#ask-button");
 const newChatButton = document.querySelector("#new-chat-button");
 const statusText = document.querySelector("#status");
 const taskInstruction = document.querySelector("#task-instruction");
-const progressPanel = document.querySelector("#progress-panel");
-const progressMessage = document.querySelector("#progress-message");
-const elapsedTime = document.querySelector("#elapsed-time");
 const answerPanel = document.querySelector("#answer-panel");
 const messages = document.querySelector("#messages");
 const sourcesPanel = document.querySelector("#sources-panel");
@@ -701,6 +696,7 @@ let selectedMode = "ask";
 let conversationHistory = [];
 let progressTimer;
 let progressStartedAt = 0;
+let activeProgressMessage;
 const progressMessages = [
   "Reading your prompt...",
   "Searching the Acton material...",
@@ -961,13 +957,13 @@ function setSelectedMode(mode) {
 
 function showProgress() {
   progressStartedAt = Date.now();
-  progressPanel.hidden = false;
+  activeProgressMessage = appendProgressMessage();
   updateProgress();
   progressTimer = window.setInterval(updateProgress, 1000);
   window.requestAnimationFrame(() => {
-    progressPanel.scrollIntoView({
+    activeProgressMessage.container.scrollIntoView({
       behavior: "smooth",
-      block: "center"
+      block: "nearest"
     });
   });
 }
@@ -977,14 +973,22 @@ function hideProgress() {
     window.clearInterval(progressTimer);
     progressTimer = undefined;
   }
-  progressPanel.hidden = true;
+  if (activeProgressMessage) {
+    activeProgressMessage.container.remove();
+    activeProgressMessage = undefined;
+  }
 }
 
 function updateProgress() {
+  if (!activeProgressMessage) {
+    return;
+  }
+
   const elapsedSeconds = Math.max(0, Math.floor((Date.now() - progressStartedAt) / 1000));
   const messageIndex = Math.min(progressMessages.length - 1, Math.floor(elapsedSeconds / 6));
-  progressMessage.textContent = progressMessages[messageIndex];
-  elapsedTime.textContent = elapsedSeconds === 1 ? "1 second elapsed" : elapsedSeconds + " seconds elapsed";
+  activeProgressMessage.message.textContent = progressMessages[messageIndex];
+  activeProgressMessage.elapsed.textContent =
+    elapsedSeconds === 1 ? "1 second elapsed" : elapsedSeconds + " seconds elapsed";
 }
 
 function renderAnswer(data) {
@@ -1035,6 +1039,32 @@ function appendMessage(role, content, label) {
   return {
     message,
     body
+  };
+}
+
+function appendProgressMessage() {
+  const container = document.createElement("div");
+  container.className = "progress-message";
+
+  const spinner = document.createElement("div");
+  spinner.className = "spinner";
+  spinner.setAttribute("aria-hidden", "true");
+
+  const body = document.createElement("div");
+  const heading = document.createElement("h3");
+  heading.textContent = "Working on it";
+  const message = document.createElement("p");
+  const elapsed = document.createElement("p");
+  elapsed.className = "progress-message__elapsed";
+
+  body.append(heading, message, elapsed);
+  container.append(spinner, body);
+  messages.append(container);
+
+  return {
+    container,
+    message,
+    elapsed
   };
 }
 
