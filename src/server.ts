@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-code-contrast";
+const assetVersion = "20260425-user-text-contrast";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -514,12 +514,32 @@ button:disabled {
 
 .message--user,
 .message--user .message__body,
-.message--user .markdown-body {
+.message--user .markdown-body,
+.message--user .markdown-body p,
+.message--user .markdown-body ul,
+.message--user .markdown-body ol,
+.message--user .markdown-body li,
+.message--user .markdown-body blockquote {
   color: #151617;
 }
 
 .message--user .message__header {
   color: #5d4810;
+}
+
+.message--user .markdown-body pre {
+  border-color: rgba(156, 116, 18, 0.24);
+  border-left-color: #9c7412;
+  background: rgba(255, 255, 255, 0.42);
+  color: #151617;
+}
+
+.message--user .markdown-body code {
+  color: #151617;
+}
+
+.message--user .markdown-body pre code {
+  color: inherit;
 }
 
 .message__body {
