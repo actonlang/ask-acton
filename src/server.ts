@@ -66,7 +66,7 @@ const askPageHtml = `<!doctype html>
         </nav>
       </section>
 
-      <section class="card" aria-label="Ask Acton form">
+      <section id="ask-form-card" class="card form-card" aria-label="Ask Acton form">
         <form id="ask-form">
           <label>
             <span>What do you want help with?</span>
@@ -101,7 +101,6 @@ const askPageHtml = `<!doctype html>
 
           <div class="actions">
             <button id="ask-button" type="submit">Ask Acton</button>
-            <button id="new-chat-button" class="secondary-button" type="button">New chat</button>
             <p id="status" role="status" aria-live="polite"></p>
           </div>
         </form>
@@ -124,6 +123,10 @@ const askPageHtml = `<!doctype html>
           <ul id="sources"></ul>
         </div>
       </section>
+
+      <div class="after-conversation-actions">
+        <button id="new-chat-button" class="secondary-button" type="button">New chat</button>
+      </div>
     </main>
   </body>
 </html>`;
@@ -295,6 +298,19 @@ textarea:focus {
     monospace;
 }
 
+.form-card.follow-up {
+  margin-top: 1.5rem;
+}
+
+.form-card.follow-up .task-row,
+.form-card.follow-up .task-instruction {
+  display: none;
+}
+
+.form-card.follow-up textarea {
+  min-height: 7rem;
+}
+
 .task-row {
   display: flex;
   flex-wrap: wrap;
@@ -404,6 +420,16 @@ button:disabled {
 
 #status.error {
   color: var(--error);
+}
+
+.after-conversation-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.after-conversation-actions[hidden] {
+  display: none;
 }
 
 .progress-card,
@@ -657,6 +683,7 @@ button:disabled {
 
 const askPageJs = `
 const form = document.querySelector("#ask-form");
+const formCard = document.querySelector("#ask-form-card");
 const askInput = document.querySelector("#ask-input");
 const askButton = document.querySelector("#ask-button");
 const newChatButton = document.querySelector("#new-chat-button");
@@ -669,6 +696,7 @@ const answerPanel = document.querySelector("#answer-panel");
 const messages = document.querySelector("#messages");
 const sourcesPanel = document.querySelector("#sources-panel");
 const sourcesList = document.querySelector("#sources");
+const afterConversationActions = document.querySelector(".after-conversation-actions");
 let selectedMode = "ask";
 let conversationHistory = [];
 let progressTimer;
@@ -692,6 +720,8 @@ const taskPlaceholders = {
   concept: "Write the Acton concept you want explained..."
 };
 
+afterConversationActions.hidden = true;
+
 document.querySelectorAll(".task-button").forEach((button) => {
   button.addEventListener("click", () => {
     setSelectedMode(button.dataset.mode || "ask");
@@ -705,7 +735,12 @@ newChatButton.addEventListener("click", () => {
   sourcesList.replaceChildren();
   sourcesPanel.hidden = true;
   answerPanel.hidden = true;
+  afterConversationActions.hidden = true;
+  formCard.classList.remove("follow-up");
+  askButton.textContent = "Ask Acton";
+  form.querySelector("label span").textContent = "What do you want help with?";
   askInput.value = "";
+  askInput.rows = 14;
   setSelectedMode("ask");
   setStatus("");
   askInput.focus();
@@ -728,6 +763,7 @@ form.addEventListener("submit", async (event) => {
 
   appendMessage("user", displayTextForPayload(payload), selectedTaskLabel());
   answerPanel.hidden = false;
+  moveFormAfterConversation();
   setLoading(true);
   setStatus("Asking Acton...");
   showProgress();
@@ -788,6 +824,21 @@ function readPayload() {
   }
 
   return { question: input };
+}
+
+function moveFormAfterConversation() {
+  if (!formCard.classList.contains("follow-up")) {
+    answerPanel.after(formCard);
+  }
+
+  formCard.classList.add("follow-up");
+  selectedMode = "ask";
+  afterConversationActions.hidden = false;
+  formCard.after(afterConversationActions);
+  form.querySelector("label span").textContent = "Follow up";
+  askInput.rows = 5;
+  askInput.placeholder = "Ask a follow-up, or paste signatures, code, or another error...";
+  askButton.textContent = "Send follow-up";
 }
 
 async function streamAnswer(payload, assistantBody) {
