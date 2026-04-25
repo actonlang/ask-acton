@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-page-title-nav";
+const assetVersion = "20260426-nav-metrics";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -194,23 +194,24 @@ main {
 }
 
 .site-nav {
-  display: flex;
+  display: inline-flex;
   align-self: stretch;
   align-items: stretch;
-  gap: 0.2rem;
+  gap: 2px;
 }
 
 .site-nav a {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 0 0.85rem;
+  padding: 0 10px;
   color: var(--accent);
-  font-size: 0.78rem;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-decoration: none;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .site-nav a:hover,
@@ -220,9 +221,9 @@ main {
 
 .site-nav a::after {
   position: absolute;
-  right: 0.85rem;
+  right: 10px;
   bottom: 0;
-  left: 0.85rem;
+  left: 10px;
   height: 3px;
   border-radius: 999px 999px 0 0;
   background: transparent;
@@ -730,14 +731,14 @@ button:disabled {
   }
 
   .site-nav a {
-    flex: 1;
-    justify-content: center;
-    padding: 0 0.5rem;
+    padding: 0 7px;
+    font-size: 11px;
+    letter-spacing: 0.05em;
   }
 
   .site-nav a::after {
-    right: 0.5rem;
-    left: 0.5rem;
+    right: 7px;
+    left: 7px;
   }
 
   main {
