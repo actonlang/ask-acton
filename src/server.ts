@@ -6,27 +6,41 @@ import { z } from "zod";
 import { config } from "./config.js";
 import { answerQuestion } from "./openai.js";
 
-const askSchema = z.object({
-  question: z.string().trim().min(1).max(config.maxQuestionChars),
-  code: z.string().max(config.maxContextChars).optional(),
-  error: z.string().max(config.maxContextChars).optional(),
-  page: z
-    .object({
-      url: z.string().url().optional(),
-      title: z.string().max(300).optional(),
-      excerpt: z.string().max(config.maxContextChars).optional()
-    })
-    .optional(),
-  history: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.string().max(config.maxContextChars)
+const optionalText = (maxLength: number) =>
+  z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, z.string().max(maxLength).optional());
+
+const askSchema = z
+  .object({
+    question: optionalText(config.maxQuestionChars),
+    code: optionalText(config.maxContextChars),
+    error: optionalText(config.maxContextChars),
+    page: z
+      .object({
+        url: z.string().url().optional(),
+        title: z.string().max(300).optional(),
+        excerpt: z.string().max(config.maxContextChars).optional()
       })
-    )
-    .max(config.maxHistoryMessages)
-    .optional()
-});
+      .optional(),
+    history: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string().max(config.maxContextChars)
+        })
+      )
+      .max(config.maxHistoryMessages)
+      .optional()
+  })
+  .refine((request) => request.question || request.code || request.error, {
+    message: "Provide a question, Acton code, or error output."
+  });
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -44,8 +58,7 @@ const askPageHtml = `<!doctype html>
         <h1 id="page-title">Get help with Acton code, errors, and concepts.</h1>
         <p>
           Ask a question about Acton, or paste Acton code and compiler output
-          for a more specific answer. Ask Acton uses the Acton guide as its
-          primary source.
+          for a more specific answer.
         </p>
         <nav aria-label="Related Acton sites">
           <a href="https://acton.guide/">Acton Guide</a>
@@ -56,15 +69,26 @@ const askPageHtml = `<!doctype html>
       <section class="card" aria-label="Ask Acton form">
         <form id="ask-form">
           <label>
-            <span>Question</span>
+            <span>Question or task <em>optional if you paste code or an error</em></span>
             <textarea
               id="question"
               name="question"
-              required
               rows="6"
               placeholder="How do I read an optional value safely?"
             ></textarea>
           </label>
+
+          <div class="task-row" aria-label="Common tasks">
+            <button type="button" class="task-button" data-prompt="Explain this Acton error and show the smallest useful fix.">
+              Explain error
+            </button>
+            <button type="button" class="task-button" data-prompt="Review this Acton code and point out the likely problem.">
+              Review code
+            </button>
+            <button type="button" class="task-button" data-prompt="Explain this Acton concept with a small example.">
+              Explain concept
+            </button>
+          </div>
 
           <div class="context-grid">
             <label>
@@ -99,7 +123,7 @@ const askPageHtml = `<!doctype html>
 
       <section id="answer-panel" class="card answer-card" aria-live="polite" hidden>
         <h2>Answer</h2>
-        <pre id="answer-text"></pre>
+        <div id="answer-text" class="markdown-body"></div>
         <div id="sources-panel" hidden>
           <h3>Sources</h3>
           <ul id="sources"></ul>
@@ -230,7 +254,7 @@ label {
   display: grid;
   gap: 0.55rem;
   color: var(--text);
-  font-weight: 750;
+  font-weight: 700;
 }
 
 label span {
@@ -256,6 +280,7 @@ textarea {
   color: var(--text);
   background: var(--bg-soft);
   font: inherit;
+  font-weight: 450;
   line-height: 1.5;
   resize: vertical;
 }
@@ -267,14 +292,20 @@ textarea:focus {
 }
 
 #code,
-#error,
-#answer-text {
+#error {
   font-family:
     "SFMono-Regular",
     "Cascadia Code",
     "Liberation Mono",
     ui-monospace,
     monospace;
+}
+
+.task-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
 }
 
 .context-grid {
@@ -307,6 +338,21 @@ button:hover {
   filter: brightness(1.04);
 }
 
+.task-button {
+  min-height: 2.35rem;
+  border: 1px solid rgba(29, 122, 71, 0.28);
+  padding: 0 0.9rem;
+  color: var(--accent-strong);
+  background: rgba(29, 122, 71, 0.09);
+  font-size: 0.92rem;
+  font-weight: 720;
+}
+
+.task-button:hover {
+  border-color: rgba(29, 122, 71, 0.5);
+  background: rgba(29, 122, 71, 0.15);
+}
+
 button:disabled {
   cursor: wait;
   filter: grayscale(0.2);
@@ -327,12 +373,98 @@ button:disabled {
 }
 
 #answer-text {
-  overflow-x: auto;
-  margin: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 0.96rem;
+  font-size: 1rem;
   line-height: 1.6;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  margin: 1.35rem 0 0.55rem;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.markdown-body h1 {
+  font-size: 1.55rem;
+}
+
+.markdown-body h2 {
+  font-size: 1.3rem;
+}
+
+.markdown-body h3 {
+  font-size: 1.1rem;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.7rem 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.35rem;
+}
+
+.markdown-body li + li {
+  margin-top: 0.3rem;
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  margin: 0.9rem 0;
+  padding: 1rem;
+  background: var(--bg-soft);
+  line-height: 1.5;
+}
+
+.markdown-body code {
+  border-radius: 0.35rem;
+  padding: 0.13rem 0.32rem;
+  background: rgba(29, 122, 71, 0.1);
+  font-family:
+    "SFMono-Regular",
+    "Cascadia Code",
+    "Liberation Mono",
+    ui-monospace,
+    monospace;
+  font-size: 0.92em;
+}
+
+.markdown-body pre code {
+  display: block;
+  padding: 0;
+  background: transparent;
+  font-size: 0.92rem;
+}
+
+.markdown-body blockquote {
+  margin: 0.9rem 0;
+  border-left: 4px solid rgba(29, 122, 71, 0.32);
+  padding-left: 1rem;
+  color: var(--muted);
+}
+
+.markdown-body a {
+  display: inline;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  text-decoration: underline;
 }
 
 #sources {
@@ -405,6 +537,7 @@ button:disabled {
 
 const askPageJs = `
 const form = document.querySelector("#ask-form");
+const questionInput = document.querySelector("#question");
 const askButton = document.querySelector("#ask-button");
 const statusText = document.querySelector("#status");
 const answerPanel = document.querySelector("#answer-panel");
@@ -412,19 +545,26 @@ const answerText = document.querySelector("#answer-text");
 const sourcesPanel = document.querySelector("#sources-panel");
 const sourcesList = document.querySelector("#sources");
 
+document.querySelectorAll(".task-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    questionInput.value = button.dataset.prompt || "";
+    questionInput.focus();
+  });
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const payload = readPayload();
-  if (!payload.question) {
-    setStatus("Write a question first.", true);
+  if (!payload.question && !payload.code && !payload.error) {
+    setStatus("Ask a question or paste Acton code or error output first.", true);
     return;
   }
 
   setLoading(true);
   setStatus("Asking Acton...");
   answerPanel.hidden = true;
-  answerText.textContent = "";
+  answerText.replaceChildren();
   sourcesList.replaceChildren();
   sourcesPanel.hidden = true;
 
@@ -456,8 +596,11 @@ function readPayload() {
   const question = String(formData.get("question") ?? "").trim();
   const code = String(formData.get("code") ?? "").trim();
   const error = String(formData.get("error") ?? "").trim();
-  const payload = { question };
+  const payload = {};
 
+  if (question) {
+    payload.question = question;
+  }
   if (code) {
     payload.code = code;
   }
@@ -469,7 +612,7 @@ function readPayload() {
 }
 
 function renderAnswer(data) {
-  answerText.textContent = data.answer || "Ask Acton did not return an answer.";
+  answerText.innerHTML = renderMarkdown(data.answer || "Ask Acton did not return an answer.");
   answerPanel.hidden = false;
 
   const citations = Array.isArray(data.citations) ? data.citations : [];
@@ -510,6 +653,100 @@ function errorMessage(response, data) {
     return "Ask Acton failed. Request id: " + data.requestId;
   }
   return "Ask Acton failed with HTTP " + response.status + ".";
+}
+
+function renderMarkdown(markdown) {
+  const codeFencePattern = /\\x60\\x60\\x60([\\w-]*)\\n?([\\s\\S]*?)\\x60\\x60\\x60/g;
+  const html = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = codeFencePattern.exec(markdown)) !== null) {
+    html.push(renderMarkdownBlocks(markdown.slice(lastIndex, match.index)));
+    html.push(renderCodeBlock(match[2], match[1]));
+    lastIndex = match.index + match[0].length;
+  }
+
+  html.push(renderMarkdownBlocks(markdown.slice(lastIndex)));
+  return html.join("");
+}
+
+function renderMarkdownBlocks(markdown) {
+  return markdown
+    .replace(/\\r\\n/g, "\\n")
+    .split(/\\n{2,}/)
+    .map((block) => renderMarkdownBlock(block.trim()))
+    .join("");
+}
+
+function renderMarkdownBlock(block) {
+  if (!block) {
+    return "";
+  }
+
+  const lines = block.split("\\n").map((line) => line.trimEnd());
+  const firstLine = lines[0].trim();
+  const heading = /^(#{1,3})\\s+(.+)$/.exec(firstLine);
+
+  if (heading && lines.length === 1) {
+    const level = heading[1].length;
+    return "<h" + level + ">" + renderInlineMarkdown(heading[2]) + "</h" + level + ">";
+  }
+
+  if (lines.every((line) => /^\\s*[-*]\\s+/.test(line))) {
+    return "<ul>" + lines.map((line) => "<li>" + renderInlineMarkdown(line.replace(/^\\s*[-*]\\s+/, "")) + "</li>").join("") + "</ul>";
+  }
+
+  if (lines.every((line) => /^\\s*\\d+\\.\\s+/.test(line))) {
+    return "<ol>" + lines.map((line) => "<li>" + renderInlineMarkdown(line.replace(/^\\s*\\d+\\.\\s+/, "")) + "</li>").join("") + "</ol>";
+  }
+
+  if (lines.every((line) => /^\\s*>\\s?/.test(line))) {
+    const quote = lines.map((line) => line.replace(/^\\s*>\\s?/, "")).join(" ");
+    return "<blockquote>" + renderInlineMarkdown(quote) + "</blockquote>";
+  }
+
+  return "<p>" + renderInlineMarkdown(lines.join(" ")) + "</p>";
+}
+
+function renderInlineMarkdown(markdown) {
+  const codeSpans = [];
+  const withCodePlaceholders = markdown.replace(/\\x60([^\\x60]+)\\x60/g, (_match, code) => {
+    const index = codeSpans.push(code) - 1;
+    return "%%CODE" + index + "%%";
+  });
+
+  let html = escapeHtml(withCodePlaceholders);
+  html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
+  html = html.replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g, (_match, label, url) => {
+    return '<a href="' + escapeHtml(url) + '" rel="noreferrer" target="_blank">' + label + "</a>";
+  });
+  html = html.replace(/%%CODE(\\d+)%%/g, (_match, index) => {
+    return "<code>" + escapeHtml(codeSpans[Number(index)] || "") + "</code>";
+  });
+  return html;
+}
+
+function renderCodeBlock(code, language) {
+  const languageClass = /^[a-z0-9_-]+$/i.test(language) && language ? " class=\\"language-" + language + "\\"" : "";
+  return "<pre><code" + languageClass + ">" + escapeHtml(code.trimEnd()) + "</code></pre>";
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => {
+    switch (character) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "\\"":
+        return "&quot;";
+      default:
+        return "&#39;";
+    }
+  });
 }
 `.trim();
 

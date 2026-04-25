@@ -15,7 +15,8 @@ fence tagged acton, not python or another language tag.
 `.trim();
 
 export function buildUserInput(request: AskRequest): string {
-  const parts = [`Question:\n${request.question.trim()}`];
+  const question = request.question?.trim() || defaultQuestion(request);
+  const parts = [`Question:\n${question}`];
 
   if (request.code?.trim()) {
     parts.push(`Acton code:\n\`\`\`acton\n${request.code.trim()}\n\`\`\``);
@@ -42,4 +43,14 @@ export function buildUserInput(request: AskRequest): string {
   }
 
   return parts.join("\n\n---\n\n");
+}
+
+function defaultQuestion(request: AskRequest): string {
+  if (request.error?.trim()) {
+    return "Explain this Acton error and show the smallest useful fix.";
+  }
+  if (request.code?.trim()) {
+    return "Explain this Acton code and point out any likely issues.";
+  }
+  return "Answer this Acton question.";
 }

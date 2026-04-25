@@ -12,7 +12,7 @@ export interface PageContext {
 }
 
 export interface AskRequest {
-  question: string;
+  question?: string;
   code?: string;
   error?: string;
   page?: PageContext;
