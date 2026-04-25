@@ -68,15 +68,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 3.5rem;
+  min-height: 50px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0 1rem;
+  padding: 0 15px;
   background: var(--chrome-bg, #202326);
   color: #f7f8f6;
 }
 
 .app-mark {
   color: #f7f8f6;
+  font-size: 1.5rem;
   font-weight: 850;
   letter-spacing: -0.03em;
   text-decoration: none;
@@ -125,8 +126,9 @@ body {
 .playground {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 0.8fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 1rem;
-  min-height: calc(100vh - 3.5rem);
+  min-height: calc(100vh - 50px);
   padding: 1rem;
 }
 

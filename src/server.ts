@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-nav-align";
+const assetVersion = "20260425-page-title-nav";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -55,7 +55,7 @@ const askPageHtml = `<!doctype html>
   </head>
   <body>
     <header class="app-header">
-      <a class="app-mark" href="https://acton.guide/">Acton</a>
+      <a class="app-mark" href="https://ask.acton.guide/" aria-current="page">Ask Acton</a>
       <nav class="site-nav" aria-label="Acton sites">
         <a href="https://acton.guide/">Guide</a>
         <a href="https://play.acton.guide/">Play</a>
@@ -178,15 +178,16 @@ main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 3.5rem;
+  min-height: 50px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0 1rem;
+  padding: 0 15px;
   background: var(--chrome-bg);
   color: #f7f8f6;
 }
 
 .app-mark {
   color: #f7f8f6;
+  font-size: 1.5rem;
   font-weight: 850;
   letter-spacing: -0.03em;
   text-decoration: none;
