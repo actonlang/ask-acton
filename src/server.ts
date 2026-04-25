@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260425-site-switcher";
+const assetVersion = "20260425-site-nav";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -54,6 +54,15 @@ const askPageHtml = `<!doctype html>
     <script type="module" src="/ask.js?v=${assetVersion}"></script>
   </head>
   <body>
+    <header class="app-header">
+      <a class="app-mark" href="https://acton.guide/">Acton</a>
+      <nav class="site-nav" aria-label="Acton sites">
+        <a href="https://acton.guide/">Guide</a>
+        <a href="https://play.acton.guide/">Play</a>
+        <a class="is-active" href="https://ask.acton.guide/" aria-current="page">Ask</a>
+      </nav>
+    </header>
+
     <main>
       <section class="hero" aria-labelledby="page-title">
         <p class="eyebrow">Ask Acton</p>
@@ -62,11 +71,6 @@ const askPageHtml = `<!doctype html>
           Ask a question about Acton, or paste Acton code and compiler output
           for a more specific answer.
         </p>
-        <nav class="site-switcher" aria-label="Acton sites">
-          <a href="https://acton.guide/">Guide</a>
-          <a href="https://play.acton.guide/">Play</a>
-          <a class="is-active" href="https://ask.acton.guide/" aria-current="page">Ask</a>
-        </nav>
       </section>
 
       <section id="ask-form-card" class="card form-card" aria-label="Ask Acton form">
@@ -169,6 +173,64 @@ main {
   padding: 4rem 0;
 }
 
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0 1rem;
+  background: #202326;
+  color: #f7f8f6;
+}
+
+.app-mark {
+  color: #f7f8f6;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.site-nav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  color: #c8cdd0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.site-nav a:hover,
+.site-nav a.is-active {
+  color: #f7f8f6;
+}
+
+.site-nav a::after {
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0;
+  left: 0.85rem;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.site-nav a.is-active::after {
+  background: var(--accent);
+}
+
 .hero {
   max-width: 48rem;
   margin-bottom: 2rem;
@@ -212,42 +274,6 @@ p {
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.6;
-}
-
-.site-switcher {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.25rem;
-  background: rgba(255, 255, 255, 0.38);
-  width: fit-content;
-}
-
-.site-switcher a,
-#sources a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.5rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0 1rem;
-  color: var(--text);
-  font-weight: 750;
-  text-decoration: none;
-}
-
-.site-switcher a:hover,
-#sources a:hover {
-  border-color: rgba(255, 212, 42, 0.7);
-}
-
-.site-switcher a.is-active {
-  border-color: rgba(156, 116, 18, 0.28);
-  background: var(--accent);
-  color: var(--accent-text);
 }
 
 .card {
@@ -691,6 +717,27 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.7rem 1rem 0;
+  }
+
+  .site-nav {
+    min-height: 2.6rem;
+  }
+
+  .site-nav a {
+    flex: 1;
+    justify-content: center;
+    padding: 0 0.5rem;
+  }
+
+  .site-nav a::after {
+    right: 0.5rem;
+    left: 0.5rem;
+  }
+
   main {
     padding: 2rem 0;
   }
@@ -737,14 +784,6 @@ button:disabled {
 
   .card {
     background: var(--panel);
-  }
-
-  .site-switcher {
-    background: rgba(21, 22, 23, 0.58);
-  }
-
-  .site-switcher a:not(.is-active) {
-    background: rgba(32, 35, 38, 0.58);
   }
 
   .task-row {

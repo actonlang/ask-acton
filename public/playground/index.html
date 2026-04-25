@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="/playground.css">
   </head>
   <body>
+    <header class="app-header">
+      <a class="app-mark" href="https://acton.guide/">Acton</a>
+      <nav class="site-nav" aria-label="Acton sites">
+        <a href="https://acton.guide/">Guide</a>
+        <a class="is-active" href="https://play.acton.guide/" aria-current="page">Play</a>
+        <a href="https://ask.acton.guide/">Ask</a>
+      </nav>
+    </header>
+
     <main class="playground">
       <section class="playground__editor">
         <header>
@@ -14,14 +23,7 @@
             <p>Acton Playground</p>
             <small>Runs are limited to 15 seconds.</small>
           </div>
-          <div class="header-actions">
-            <nav class="site-switcher" aria-label="Acton sites">
-              <a href="https://acton.guide/">Guide</a>
-              <a class="is-active" href="https://play.acton.guide/" aria-current="page">Play</a>
-              <a href="https://ask.acton.guide/">Ask</a>
-            </nav>
-            <button id="run" type="button">Run</button>
-          </div>
+          <button id="run" type="button">Run</button>
         </header>
         <div class="editor-frame">
           <pre id="line-numbers" aria-hidden="true">1</pre>
