@@ -125,18 +125,22 @@ const askPageHtml = `<!doctype html>
 const askPageCss = `
 :root {
   color-scheme: light dark;
-  --bg: #eff5ed;
-  --bg-soft: #f8fbf5;
-  --text: #132018;
-  --muted: #526157;
-  --border: rgba(24, 63, 39, 0.18);
-  --accent: #1d7a47;
-  --accent-strong: #0f6034;
-  --accent-text: #ffffff;
+  --bg: #eef0ef;
+  --bg-soft: #f7f8f6;
+  --panel: rgba(247, 248, 246, 0.92);
+  --text: #191b1c;
+  --muted: #5f666a;
+  --border: rgba(35, 38, 40, 0.16);
+  --accent: #ffd42a;
+  --accent-soft: #fff3b4;
+  --accent-strong: #9c7412;
+  --accent-text: #151617;
+  --code-bg: #f4f4f1;
   --error: #aa2c2c;
-  --shadow: 0 24px 80px rgba(31, 68, 45, 0.16);
+  --shadow: 0 18px 45px rgba(21, 22, 23, 0.12);
   font-family:
     "Avenir Next",
+    "Neue Haas Grotesk Text",
     "Segoe UI",
     ui-sans-serif,
     system-ui,
@@ -151,8 +155,8 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 12% 4%, rgba(122, 191, 119, 0.28), transparent 32rem),
-    linear-gradient(145deg, var(--bg), #dbead8 55%, #f6f4ea);
+    linear-gradient(120deg, rgba(255, 212, 42, 0.18), transparent 28rem),
+    linear-gradient(180deg, var(--bg), var(--bg-soft) 48%, #ececeb);
   color: var(--text);
 }
 
@@ -185,6 +189,7 @@ p {
 
 h1 {
   margin-bottom: 1rem;
+  color: var(--text);
   font-size: clamp(2.4rem, 6vw, 5rem);
   line-height: 0.95;
   letter-spacing: -0.055em;
@@ -220,23 +225,22 @@ a {
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0 1rem;
-  color: var(--accent-strong);
-  background: rgba(255, 255, 255, 0.42);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.52);
   font-weight: 750;
   text-decoration: none;
 }
 
 a:hover {
-  border-color: rgba(29, 122, 71, 0.5);
+  border-color: rgba(255, 212, 42, 0.7);
 }
 
 .card {
   border: 1px solid var(--border);
-  border-radius: 1.5rem;
+  border-radius: 1.1rem;
   padding: clamp(1.25rem, 3vw, 2rem);
-  background: rgba(248, 251, 245, 0.86);
+  background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
 }
 
 label {
@@ -275,8 +279,8 @@ textarea {
 }
 
 textarea:focus {
-  border-color: rgba(29, 122, 71, 0.72);
-  box-shadow: 0 0 0 4px rgba(29, 122, 71, 0.15);
+  border-color: rgba(255, 212, 42, 0.9);
+  box-shadow: 0 0 0 4px rgba(255, 212, 42, 0.24);
   outline: none;
 }
 
@@ -326,7 +330,7 @@ button {
   border-radius: 999px;
   padding: 0 1.35rem;
   color: var(--accent-text);
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  background: var(--accent);
   font: inherit;
   font-weight: 850;
   cursor: pointer;
@@ -337,35 +341,35 @@ button:hover {
 }
 
 .secondary-button {
-  border: 1px solid rgba(29, 122, 71, 0.28);
-  color: var(--accent-strong);
-  background: rgba(29, 122, 71, 0.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.5);
   font-weight: 750;
 }
 
 .secondary-button:hover {
-  background: rgba(29, 122, 71, 0.14);
+  background: rgba(255, 212, 42, 0.18);
 }
 
 .task-button {
   min-height: 2.45rem;
   border: 1px solid transparent;
   padding: 0 1rem;
-  color: var(--accent-strong);
+  color: var(--text);
   background: transparent;
   font-size: 0.92rem;
   font-weight: 720;
 }
 
 .task-button:hover {
-  background: rgba(29, 122, 71, 0.09);
+  background: rgba(255, 212, 42, 0.12);
 }
 
 .task-button.active {
-  border-color: rgba(29, 122, 71, 0.45);
-  color: var(--accent-strong);
-  background: var(--bg-soft);
-  box-shadow: 0 8px 24px rgba(31, 68, 45, 0.12);
+  border-color: rgba(156, 116, 18, 0.28);
+  color: var(--text);
+  background: var(--accent-soft);
+  box-shadow: none;
 }
 
 .task-button.active::before {
@@ -375,10 +379,10 @@ button:hover {
 
 .task-instruction {
   margin-top: 0.8rem;
-  border: 1px solid rgba(29, 122, 71, 0.2);
+  border: 1px solid rgba(156, 116, 18, 0.2);
   border-radius: 1rem;
   padding: 0.85rem 1rem;
-  background: rgba(29, 122, 71, 0.07);
+  background: rgba(255, 212, 42, 0.1);
 }
 
 .task-instruction span {
@@ -435,7 +439,7 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1rem;
-  background: rgba(29, 122, 71, 0.07);
+  background: rgba(255, 212, 42, 0.1);
 }
 
 .progress-message h3 {
@@ -457,7 +461,7 @@ button:disabled {
   width: 2.75rem;
   height: 2.75rem;
   flex: 0 0 auto;
-  border: 4px solid rgba(29, 122, 71, 0.16);
+  border: 4px solid rgba(35, 38, 40, 0.16);
   border-top-color: var(--accent);
   border-radius: 999px;
   animation: spin 0.9s linear infinite;
@@ -484,12 +488,13 @@ button:disabled {
 
 .message--user {
   margin-left: clamp(0rem, 8vw, 6rem);
-  background: rgba(29, 122, 71, 0.08);
+  border-color: rgba(156, 116, 18, 0.22);
+  background: linear-gradient(180deg, #fff7cf, var(--accent-soft));
 }
 
 .message--assistant {
   margin-right: clamp(0rem, 8vw, 6rem);
-  background: var(--bg-soft);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .message__header {
@@ -555,17 +560,18 @@ button:disabled {
 .markdown-body pre {
   overflow-x: auto;
   border: 1px solid var(--border);
+  border-left: 0.35rem solid var(--accent);
   border-radius: 1rem;
   margin: 0.9rem 0;
   padding: 1rem;
-  background: var(--bg-soft);
+  background: var(--code-bg);
   line-height: 1.5;
 }
 
 .markdown-body code {
   border-radius: 0.35rem;
   padding: 0.13rem 0.32rem;
-  background: rgba(29, 122, 71, 0.1);
+  background: rgba(255, 212, 42, 0.16);
   font-family:
     "SFMono-Regular",
     "Cascadia Code",
@@ -584,7 +590,7 @@ button:disabled {
 
 .markdown-body blockquote {
   margin: 0.9rem 0;
-  border-left: 4px solid rgba(29, 122, 71, 0.32);
+  border-left: 4px solid var(--accent);
   padding-left: 1rem;
   color: var(--muted);
 }
@@ -613,7 +619,7 @@ button:disabled {
   border-radius: 999px;
   padding: 0.35rem 0.7rem;
   color: var(--muted);
-  background: rgba(29, 122, 71, 0.08);
+  background: rgba(255, 212, 42, 0.12);
   font-size: 0.88rem;
 }
 
@@ -645,36 +651,60 @@ button:disabled {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #07110d;
-    --bg-soft: #101d16;
-    --text: #edf6ef;
-    --muted: #abc0b1;
-    --border: rgba(176, 224, 190, 0.18);
-    --accent: #47c979;
-    --accent-strong: #7be39e;
-    --accent-text: #07110d;
+    --bg: #151617;
+    --bg-soft: #202326;
+    --panel: rgba(32, 35, 38, 0.9);
+    --text: #f2f3ef;
+    --muted: #aeb5b9;
+    --border: rgba(255, 255, 255, 0.14);
+    --accent: #ffd42a;
+    --accent-soft: #ffe15d;
+    --accent-strong: #ffe15d;
+    --accent-text: #151617;
+    --code-bg: #1a1c1d;
     --error: #ff8c8c;
-    --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
   }
 
   body {
     background:
-      radial-gradient(circle at 18% 0%, rgba(71, 201, 121, 0.18), transparent 32rem),
-      linear-gradient(145deg, #07110d, #0d1c14 56%, #111913);
+      linear-gradient(120deg, rgba(255, 212, 42, 0.1), transparent 28rem),
+      linear-gradient(180deg, #151617, #202326 45%, #17191a);
   }
 
   a,
   .card {
-    background: rgba(12, 24, 17, 0.78);
+    background: var(--panel);
   }
 
   .task-row {
-    background: rgba(12, 24, 17, 0.5);
+    background: rgba(21, 22, 23, 0.58);
   }
 
   .task-button.active {
-    background: rgba(71, 201, 121, 0.12);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+    color: #151617;
+    background: var(--accent-soft);
+  }
+
+  .task-instruction,
+  .progress-message {
+    background: rgba(255, 212, 42, 0.09);
+  }
+
+  textarea,
+  .message--assistant,
+  .markdown-body pre {
+    background: #292d30;
+  }
+
+  .message--user {
+    color: #151617;
+    background: var(--accent-soft);
+  }
+
+  .markdown-body code {
+    color: #151617;
+    background: var(--accent-soft);
   }
 }
 `.trim();

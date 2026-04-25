@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acton Color Study</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --steel-950: #151617;
+        --steel-900: #222426;
+        --steel-800: #33373a;
+        --steel-700: #4a5054;
+        --steel-600: #666e73;
+        --steel-500: #858d92;
+        --steel-300: #c8cdd0;
+        --steel-200: #dfe2e3;
+        --steel-100: #eef0ef;
+        --steel-050: #f7f8f6;
+        --yellow-500: #ffd42a;
+        --yellow-400: #ffe15d;
+        --yellow-300: #ffea8a;
+        --yellow-700: #9c7412;
+        --ink: #191b1c;
+        --muted: #5f666a;
+        --line: rgba(35, 38, 40, 0.16);
+        --shadow: 0 24px 70px rgba(21, 22, 23, 0.16);
+        color: var(--ink);
+        font-family:
+          "Avenir Next",
+          "Neue Haas Grotesk Text",
+          "Segoe UI",
+          ui-sans-serif,
+          system-ui,
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          linear-gradient(120deg, rgba(255, 212, 42, 0.18), transparent 26rem),
+          linear-gradient(180deg, var(--steel-100), var(--steel-050) 45%, #ececeb);
+      }
+
+      main {
+        width: min(74rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 4rem 0;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(24rem, 1.2fr);
+        gap: 2rem;
+        align-items: start;
+      }
+
+      .hero {
+        position: sticky;
+        top: 2rem;
+        border-left: 0.45rem solid var(--yellow-500);
+        padding-left: 1.2rem;
+      }
+
+      .eyebrow {
+        margin: 0 0 0.8rem;
+        color: var(--yellow-700);
+        font-size: 0.78rem;
+        font-weight: 850;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 1rem;
+        color: var(--steel-950);
+        font-size: clamp(3rem, 7vw, 5.8rem);
+        line-height: 0.92;
+        letter-spacing: -0.06em;
+      }
+
+      .hero p {
+        max-width: 32rem;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.55;
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-top: 2rem;
+      }
+
+      .swatch {
+        min-height: 4.5rem;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 0.8rem;
+        padding: 0.55rem;
+        color: white;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .swatch.yellow {
+        color: var(--steel-950);
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 1.1rem;
+        background: rgba(247, 248, 246, 0.86);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        border-bottom: 1px solid var(--line);
+        padding: 1rem 1.15rem;
+        background:
+          linear-gradient(90deg, var(--steel-800), var(--steel-700));
+        color: white;
+      }
+
+      .panel-header strong {
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .status-pill {
+        border-radius: 999px;
+        padding: 0.35rem 0.65rem;
+        color: var(--steel-950);
+        background: var(--yellow-500);
+        font-size: 0.75rem;
+        font-weight: 850;
+      }
+
+      .chat {
+        display: grid;
+        gap: 1rem;
+        padding: 1.15rem;
+      }
+
+      .message {
+        display: grid;
+        gap: 0.45rem;
+        border-radius: 0.95rem;
+        padding: 0.95rem;
+      }
+
+      .message header {
+        color: var(--steel-600);
+        font-size: 0.76rem;
+        font-weight: 850;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .message p {
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      .message.user {
+        margin-left: 6rem;
+        border: 1px solid rgba(156, 116, 18, 0.22);
+        background: linear-gradient(180deg, #fff7cf, #fff3b4);
+      }
+
+      .message.ai {
+        margin-right: 6rem;
+        border: 1px solid rgba(51, 55, 58, 0.16);
+        background: white;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 0.75rem 0 0;
+        border: 1px solid rgba(51, 55, 58, 0.18);
+        border-left: 0.35rem solid var(--yellow-500);
+        border-radius: 0.75rem;
+        padding: 0.85rem;
+        background: #f4f4f1;
+        color: var(--steel-950);
+        font: 0.9rem/1.5 "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+      }
+
+      .working {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        margin-right: 6rem;
+        border: 1px dashed rgba(51, 55, 58, 0.28);
+        border-radius: 0.95rem;
+        padding: 0.95rem;
+        background: rgba(255, 212, 42, 0.1);
+        color: var(--steel-800);
+      }
+
+      .spinner {
+        width: 1.75rem;
+        height: 1.75rem;
+        border: 3px solid rgba(51, 55, 58, 0.18);
+        border-top-color: var(--yellow-500);
+        border-radius: 50%;
+      }
+
+      .composer {
+        border-top: 1px solid var(--line);
+        padding: 1rem 1.15rem 1.15rem;
+        background: #f2f3f1;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 7rem;
+        border: 1px solid rgba(51, 55, 58, 0.22);
+        border-radius: 0.85rem;
+        padding: 0.85rem;
+        background: white;
+        color: var(--steel-950);
+        font: 0.95rem/1.5 "SFMono-Regular", "Cascadia Code", ui-monospace, monospace;
+        resize: vertical;
+      }
+
+      .composer-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 0.8rem;
+      }
+
+      .hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      button {
+        min-height: 2.7rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 1.1rem;
+        color: var(--steel-950);
+        background: var(--yellow-500);
+        font: inherit;
+        font-weight: 850;
+      }
+
+      .palette-notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .note {
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.58);
+      }
+
+      .note h3 {
+        margin-bottom: 0.4rem;
+        font-size: 0.95rem;
+      }
+
+      .note p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .mode-preview {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .mode-card {
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.58);
+      }
+
+      .mode-card.dark {
+        --dark-bg: #141617;
+        --dark-panel: #202326;
+        --dark-panel-soft: #292d30;
+        --dark-line: rgba(255, 255, 255, 0.14);
+        --dark-text: #f2f3ef;
+        --dark-muted: #aeb5b9;
+        background:
+          linear-gradient(135deg, rgba(255, 212, 42, 0.12), transparent 18rem),
+          var(--dark-bg);
+        color: var(--dark-text);
+      }
+
+      .mode-card h3 {
+        margin-bottom: 0.75rem;
+      }
+
+      .mini-chat {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .mini-message {
+        border-radius: 0.75rem;
+        padding: 0.7rem;
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .mini-message.user {
+        background: #fff3b4;
+        color: var(--steel-950);
+      }
+
+      .mini-message.ai {
+        border: 1px solid var(--line);
+        background: white;
+      }
+
+      .mode-card.dark .mini-message.user {
+        background: #ffe15d;
+        color: #171717;
+      }
+
+      .mode-card.dark .mini-message.ai {
+        border-color: var(--dark-line);
+        background: var(--dark-panel-soft);
+        color: var(--dark-text);
+      }
+
+      .mode-card.dark p,
+      .mode-card.dark .hint {
+        color: var(--dark-muted);
+      }
+
+      .mode-card.dark button {
+        background: var(--yellow-500);
+        color: #171717;
+      }
+
+      @media (max-width: 860px) {
+        .shell,
+        .palette-notes,
+        .mode-preview {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          position: static;
+        }
+
+        .message.user,
+        .message.ai,
+        .working {
+          margin-left: 0;
+          margin-right: 0;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f2f3ef;
+          --muted: #aeb5b9;
+          --line: rgba(255, 255, 255, 0.14);
+          --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+        }
+
+        body {
+          background:
+            linear-gradient(120deg, rgba(255, 212, 42, 0.1), transparent 28rem),
+            linear-gradient(180deg, #151617, #202326 45%, #17191a);
+        }
+
+        h1 {
+          color: #f7f8f6;
+        }
+
+        .hero {
+          border-left-color: var(--yellow-500);
+        }
+
+        .eyebrow {
+          color: var(--yellow-400);
+        }
+
+        .panel,
+        .note,
+        .mode-card {
+          background: rgba(32, 35, 38, 0.84);
+        }
+
+        .panel-header {
+          border-bottom-color: rgba(255, 255, 255, 0.12);
+          background:
+            linear-gradient(90deg, #111213, #2a2e31);
+        }
+
+        .message.user,
+        .mini-message.user {
+          border-color: rgba(255, 212, 42, 0.25);
+          background: #ffe15d;
+          color: #171717;
+        }
+
+        .message.ai,
+        .mini-message.ai {
+          border-color: rgba(255, 255, 255, 0.14);
+          background: #292d30;
+          color: #f2f3ef;
+        }
+
+        .message header {
+          color: #c4cace;
+        }
+
+        pre,
+        textarea {
+          border-color: rgba(255, 255, 255, 0.15);
+          background: #1a1c1d;
+          color: #f2f3ef;
+        }
+
+        .working {
+          border-color: rgba(255, 255, 255, 0.18);
+          background: rgba(255, 212, 42, 0.09);
+          color: #f2f3ef;
+        }
+
+        .composer {
+          border-top-color: rgba(255, 255, 255, 0.12);
+          background: #202326;
+        }
+
+        .swatch {
+          border-color: rgba(255, 255, 255, 0.16);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="shell">
+        <section class="hero">
+          <p class="eyebrow">Acton Visual Direction</p>
+          <h1>Carrier grade, not corporate bland.</h1>
+          <p>
+            A colder hardware-gray base with one fresh yellow accent. The gray
+            should feel engineered and durable; the yellow should feel fast,
+            bright, and useful rather than playful.
+          </p>
+
+          <div class="swatches" aria-label="Palette swatches">
+            <div class="swatch" style="background: var(--steel-950)">950</div>
+            <div class="swatch" style="background: var(--steel-700)">700</div>
+            <div class="swatch" style="background: var(--steel-300); color: var(--steel-950)">300</div>
+            <div class="swatch yellow" style="background: var(--yellow-500)">Yellow</div>
+            <div class="swatch yellow" style="background: var(--yellow-300)">Soft</div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="Ask Acton color mockup">
+          <div class="panel-header">
+            <strong>Ask Acton</strong>
+            <span class="status-pill">Streaming</span>
+          </div>
+
+          <div class="chat">
+            <article class="message user">
+              <header>You</header>
+              <p>Explain this type error and show the smallest useful fix.</p>
+              <pre>Type error: expected int, got str</pre>
+            </article>
+
+            <div class="working">
+              <div class="spinner" aria-hidden="true"></div>
+              <div>
+                <strong>Working on it</strong>
+                <p class="hint">Searching Acton docs and preparing an answer...</p>
+              </div>
+            </div>
+
+            <article class="message ai">
+              <header>Ask Acton</header>
+              <p>
+                The value being passed is a string, but the function or binding
+                expects an integer. Convert the input before passing it on, or
+                change the expected type if text is the correct value.
+              </p>
+              <pre>n: int = int(text)</pre>
+            </article>
+          </div>
+
+          <form class="composer">
+            <textarea>Here is the output from acton build --sigs app.act...</textarea>
+            <div class="composer-actions">
+              <p class="hint">Follow up with signatures, source, or another error.</p>
+              <button type="button">Send follow-up</button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <section class="palette-notes" aria-label="Palette notes">
+        <div class="note">
+          <h3>User vs AI</h3>
+          <p>User messages use a yellow-tinted card. AI messages stay white on gray.</p>
+        </div>
+        <div class="note">
+          <h3>Primary Action</h3>
+          <p>Yellow is reserved for action, status, and small emphasis.</p>
+        </div>
+        <div class="note">
+          <h3>System Feel</h3>
+          <p>Hard gray edges, restrained shadows, less glass, less decorative motion.</p>
+        </div>
+      </section>
+
+      <section class="mode-preview" aria-label="Light and dark mode preview">
+        <div class="mode-card">
+          <h3>Light Mode</h3>
+          <div class="mini-chat">
+            <div class="mini-message user">User prompts get the yellow tint.</div>
+            <div class="mini-message ai">Assistant answers stay neutral and readable.</div>
+            <button type="button">Primary action</button>
+          </div>
+        </div>
+
+        <div class="mode-card dark">
+          <h3>Dark Mode</h3>
+          <p>
+            The dark version should feel like rack hardware: charcoal surfaces,
+            crisp separators, and yellow as the single active signal.
+          </p>
+          <div class="mini-chat">
+            <div class="mini-message user">Yellow still marks user intent.</div>
+            <div class="mini-message ai">AI answers sit on elevated dark gray.</div>
+            <button type="button">Primary action</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
