@@ -69,49 +69,29 @@ const askPageHtml = `<!doctype html>
       <section class="card" aria-label="Ask Acton form">
         <form id="ask-form">
           <label>
-            <span>Question or task <em>optional if you paste code or an error</em></span>
+            <span>What do you want help with?</span>
             <textarea
-              id="question"
-              name="question"
-              rows="6"
-              placeholder="How do I read an optional value safely?"
+              id="ask-input"
+              name="input"
+              rows="14"
+              spellcheck="false"
+              placeholder="Ask a question, paste Acton code, or paste compiler output..."
             ></textarea>
           </label>
 
           <div class="task-row" aria-label="Common tasks">
-            <button type="button" class="task-button" data-prompt="Explain this Acton error and show the smallest useful fix.">
+            <button type="button" class="task-button active" data-mode="ask" aria-pressed="true">
+              Ask anything
+            </button>
+            <button type="button" class="task-button" data-mode="error" aria-pressed="false">
               Explain error
             </button>
-            <button type="button" class="task-button" data-prompt="Review this Acton code and point out the likely problem.">
+            <button type="button" class="task-button" data-mode="code" aria-pressed="false">
               Review code
             </button>
-            <button type="button" class="task-button" data-prompt="Explain this Acton concept with a small example.">
+            <button type="button" class="task-button" data-mode="concept" aria-pressed="false">
               Explain concept
             </button>
-          </div>
-
-          <div class="context-grid">
-            <label>
-              <span>Acton code <em>optional</em></span>
-              <textarea
-                id="code"
-                name="code"
-                rows="10"
-                spellcheck="false"
-                placeholder="actor main(env):&#10;    print(&quot;Hello, Acton!&quot;)&#10;    env.exit(0)"
-              ></textarea>
-            </label>
-
-            <label>
-              <span>Error output <em>optional</em></span>
-              <textarea
-                id="error"
-                name="error"
-                rows="10"
-                spellcheck="false"
-                placeholder="Paste compiler or runtime output here"
-              ></textarea>
-            </label>
           </div>
 
           <div class="actions">
@@ -291,8 +271,7 @@ textarea:focus {
   outline: none;
 }
 
-#code,
-#error {
+#ask-input {
   font-family:
     "SFMono-Regular",
     "Cascadia Code",
@@ -306,13 +285,6 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.9rem;
-}
-
-.context-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
 }
 
 .actions {
@@ -351,6 +323,12 @@ button:hover {
 .task-button:hover {
   border-color: rgba(29, 122, 71, 0.5);
   background: rgba(29, 122, 71, 0.15);
+}
+
+.task-button.active {
+  border-color: rgba(29, 122, 71, 0.72);
+  color: var(--accent-text);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
 }
 
 button:disabled {
@@ -494,10 +472,6 @@ button:disabled {
     padding: 2rem 0;
   }
 
-  .context-grid {
-    grid-template-columns: 1fr;
-  }
-
   .actions {
     align-items: stretch;
     flex-direction: column;
@@ -537,18 +511,24 @@ button:disabled {
 
 const askPageJs = `
 const form = document.querySelector("#ask-form");
-const questionInput = document.querySelector("#question");
+const askInput = document.querySelector("#ask-input");
 const askButton = document.querySelector("#ask-button");
 const statusText = document.querySelector("#status");
 const answerPanel = document.querySelector("#answer-panel");
 const answerText = document.querySelector("#answer-text");
 const sourcesPanel = document.querySelector("#sources-panel");
 const sourcesList = document.querySelector("#sources");
+let selectedMode = "ask";
 
 document.querySelectorAll(".task-button").forEach((button) => {
   button.addEventListener("click", () => {
-    questionInput.value = button.dataset.prompt || "";
-    questionInput.focus();
+    selectedMode = button.dataset.mode || "ask";
+    document.querySelectorAll(".task-button").forEach((taskButton) => {
+      const active = taskButton === button;
+      taskButton.classList.toggle("active", active);
+      taskButton.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    askInput.focus();
   });
 });
 
@@ -557,7 +537,7 @@ form.addEventListener("submit", async (event) => {
 
   const payload = readPayload();
   if (!payload.question && !payload.code && !payload.error) {
-    setStatus("Ask a question or paste Acton code or error output first.", true);
+    setStatus("Ask a question, paste Acton code, or paste compiler output first.", true);
     return;
   }
 
@@ -593,22 +573,33 @@ form.addEventListener("submit", async (event) => {
 
 function readPayload() {
   const formData = new FormData(form);
-  const question = String(formData.get("question") ?? "").trim();
-  const code = String(formData.get("code") ?? "").trim();
-  const error = String(formData.get("error") ?? "").trim();
-  const payload = {};
+  const input = String(formData.get("input") ?? "").trim();
 
-  if (question) {
-    payload.question = question;
-  }
-  if (code) {
-    payload.code = code;
-  }
-  if (error) {
-    payload.error = error;
+  if (!input) {
+    return {};
   }
 
-  return payload;
+  if (selectedMode === "error") {
+    return {
+      question: "Explain this Acton error and show the smallest useful fix.",
+      error: input
+    };
+  }
+
+  if (selectedMode === "code") {
+    return {
+      question: "Review this Acton code and point out likely issues.",
+      code: input
+    };
+  }
+
+  if (selectedMode === "concept") {
+    return {
+      question: "Explain this Acton concept with a small example:\\n\\n" + input
+    };
+  }
+
+  return { question: input };
 }
 
 function renderAnswer(data) {
