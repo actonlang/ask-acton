@@ -134,14 +134,32 @@ The `.env` file must include `OPENAI_API_KEY`. Ask Acton also needs
 the guide instead of only the base model context. The default playground
 settings run one Acton snippet at a time with a 90 second timeout.
 
+To deploy only the playground before Ask Acton has an OpenAI key:
+
+```sh
+cp .env.example .env
+docker build -t ask-acton/acton-runner:tip runner-image
+docker compose up -d --build --no-deps playground caddy
+```
+
+This starts `play.acton.guide` without starting the `ask-acton` service.
+Caddy still loads the full Caddyfile, so `ask.acton.guide` may have a TLS
+certificate but will not have a working backend until Ask Acton is
+started.
+
 Verify the host and services:
 
 ```sh
 cloud-init status --wait
 docker --version
 docker compose ps
-curl -fsS http://127.0.0.1:8787/healthz
-curl -fsS http://127.0.0.1:8788/healthz
+curl -fsS https://play.acton.guide/healthz
+```
+
+For the full Ask Acton deployment, also verify:
+
+```sh
+curl -fsS https://ask.acton.guide/healthz
 ```
 
 See `docs/PROVISIONING.md` for the full runbook and local state notes.

@@ -131,13 +131,26 @@ docker compose ps
 The runner image is separate from the playground service image. Rebuild
 it whenever the Acton version used by the playground should change.
 
+To start only the playground before an OpenAI key is available:
+
+```sh
+cp .env.example .env
+docker build -t ask-acton/acton-runner:tip runner-image
+docker compose up -d --build --no-deps playground caddy
+docker compose ps
+```
+
+This starts `play.acton.guide` and leaves the Ask Acton service stopped.
+Caddy still loads the full Caddyfile and may obtain a certificate for
+`ask.acton.guide`, but that hostname will not have a working backend
+until `ask-acton` is started.
+
 ## Verify
 
 From the VM:
 
 ```sh
-curl -fsS http://127.0.0.1:8787/healthz
-curl -fsS http://127.0.0.1:8788/healthz
+docker compose ps
 ```
 
 After DNS and TLS are live:
@@ -146,6 +159,10 @@ After DNS and TLS are live:
 curl -fsS https://ask.acton.guide/healthz
 curl -fsS https://play.acton.guide/healthz
 ```
+
+For a playground-only deployment, `play.acton.guide` should pass and
+`ask.acton.guide` is expected to fail until the Ask Acton service is
+started.
 
 The playground page should load at `https://play.acton.guide/`. The Ask
 Acton API is consumed by the mdBook widget and is not meant to be a
