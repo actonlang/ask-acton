@@ -10,9 +10,10 @@ server-side.
 - `ask-acton`: TypeScript/Fastify API for `/api/ask`.
 - `playground`: TypeScript/Fastify API and page for running Acton
   snippets through a Docker sandbox.
-- `caddy`: TLS and reverse proxy for `ask.acton.guide`.
+- `caddy`: TLS and reverse proxy for `ask.acton.guide` and
+  `play.acton.guide`.
 - `public/ask-acton.*`: static widget assets for the mdBook theme.
-- `infra/glesys`: Terraform scaffold for the first GleSYS VM.
+- `infra/glesys`: OpenTofu scaffold for the first GleSYS VM.
 
 ## Local Development
 
@@ -80,9 +81,46 @@ service.
 
 ## Deploy
 
-On the VM:
+The first deployment target is one GleSYS VM that runs Ask Acton, the
+playground service, the Acton runner image, and Caddy. The guide itself
+can still be published as a static GitHub Pages site.
+
+Provisioning is driven with OpenTofu through Docker:
 
 ```sh
+export GLESYS_USERID=cl31994
+export GLESYS_TOKEN=...
+./scripts/tofu -chdir=infra/glesys init
+./scripts/tofu -chdir=infra/glesys plan
+./scripts/tofu -chdir=infra/glesys apply
+./scripts/tofu -chdir=infra/glesys output
+```
+
+The current production VM is:
+
+```text
+server_id = kvm4221419
+ipv4      = 188.126.83.249
+ipv6      = 2a02:750:23:f7::f7
+hostname  = ask-acton-01
+```
+
+Create these DNS records before starting Caddy:
+
+```text
+ask.acton.guide   A     188.126.83.249
+ask.acton.guide   AAAA  2a02:750:23:f7::f7
+play.acton.guide  A     188.126.83.249
+play.acton.guide  AAAA  2a02:750:23:f7::f7
+```
+
+Caddy obtains certificates during startup. If DNS does not already
+resolve to the VM, certificate issuance will fail.
+
+After cloud-init has finished, deploy the services on the VM:
+
+```sh
+ssh acton@188.126.83.249
 git clone https://github.com/actonlang/ask-acton.git
 cd ask-acton
 cp .env.example .env
@@ -91,17 +129,22 @@ docker build -t ask-acton/acton-runner:tip runner-image
 docker compose up -d --build
 ```
 
-Point `ask.acton.guide` and `play.acton.guide` at the VM before
-starting Caddy so it can issue TLS certificates.
+The `.env` file must include `OPENAI_API_KEY`. Ask Acton also needs
+`OPENAI_VECTOR_STORE_ID` from the indexing step if it should answer from
+the guide instead of only the base model context. The default playground
+settings run one Acton snippet at a time with a 90 second timeout.
 
-Provisioning can be driven with OpenTofu through Docker:
+Verify the host and services:
 
 ```sh
-export GLESYS_USERID=...
-export GLESYS_TOKEN=...
-./scripts/tofu -chdir=infra/glesys init
-./scripts/tofu -chdir=infra/glesys plan
+cloud-init status --wait
+docker --version
+docker compose ps
+curl -fsS http://127.0.0.1:8787/healthz
+curl -fsS http://127.0.0.1:8788/healthz
 ```
+
+See `docs/PROVISIONING.md` for the full runbook and local state notes.
 
 ## Playground Runner
 
