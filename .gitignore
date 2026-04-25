@@ -8,4 +8,5 @@ dist/
 *.tfstate.*
 terraform.tfvars
 build/
+playground-workspaces/
 .DS_Store

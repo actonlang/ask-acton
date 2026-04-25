@@ -15,17 +15,17 @@ variable "template" {
 
 variable "cpu" {
   type    = number
-  default = 2
+  default = 4
 }
 
 variable "memory" {
   type    = number
-  default = 2048
+  default = 4096
 }
 
 variable "storage" {
   type    = number
-  default = 30
+  default = 50
 }
 
 variable "bandwidth" {

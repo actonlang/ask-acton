@@ -8,6 +8,8 @@ server-side.
 ## Services
 
 - `ask-acton`: TypeScript/Fastify API for `/api/ask`.
+- `playground`: TypeScript/Fastify API and page for running Acton
+  snippets through a Docker sandbox.
 - `caddy`: TLS and reverse proxy for `ask.acton.guide`.
 - `public/ask-acton.*`: static widget assets for the mdBook theme.
 - `infra/glesys`: Terraform scaffold for the first GleSYS VM.
@@ -33,6 +35,28 @@ Ask endpoint:
 curl http://localhost:8787/api/ask \
   -H 'content-type: application/json' \
   -d '{"question":"How do actors store mutable state in Acton?"}'
+```
+
+Run the playground service locally:
+
+```sh
+npm run dev:playground
+```
+
+The playground page is then available at:
+
+```sh
+open http://localhost:8788/
+```
+
+The playground expects Docker to be available and
+`PLAYGROUND_ACTON_IMAGE` to point at an image containing `acton` and
+`runacton`.
+
+Build the default runner image:
+
+```sh
+docker build -t ask-acton/acton-runner:tip runner-image
 ```
 
 ## Index the Guide
@@ -63,13 +87,15 @@ git clone https://github.com/actonlang/ask-acton.git
 cd ask-acton
 cp .env.example .env
 $EDITOR .env
+docker build -t ask-acton/acton-runner:tip runner-image
 docker compose up -d --build
 ```
 
-Point `ask.acton.guide` at the VM before starting Caddy so it can issue
-the TLS certificate.
+Point `ask.acton.guide` and `play.acton.guide` at the VM before
+starting Caddy so it can issue TLS certificates.
 
-## Future Runner
+## Playground Runner
 
-The same VM can host an Acton playground later, but the runner should be
-a separate service with stronger sandboxing. See `docs/RUNNER.md`.
+The same VM hosts the first Acton playground, but it is a separate
+service from Ask Acton. See `docs/RUNNER.md` for the security model and
+the remaining hardening work before broad public use.

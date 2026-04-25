@@ -1,0 +1,111 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f7f2;
+  --panel: #ffffff;
+  --text: #17211b;
+  --muted: #5b675f;
+  --border: #c8d7cc;
+  --accent: #146c43;
+  --accent-strong: #0d5c38;
+  --code-bg: #101713;
+  --code-text: #e8f3ec;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.playground {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 0.8fr);
+  gap: 1rem;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.playground__editor,
+.playground__output {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header p {
+  margin: 0;
+  font-weight: 700;
+}
+
+button {
+  border: 0;
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.9rem;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+button:hover {
+  background: var(--accent-strong);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+textarea,
+pre {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  padding: 1rem;
+  background: var(--code-bg);
+  color: var(--code-text);
+  font: 0.95rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  tab-size: 4;
+}
+
+textarea {
+  resize: none;
+  outline: none;
+}
+
+pre {
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+#status {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 860px) {
+  .playground {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(24rem, 1fr) minmax(16rem, 0.7fr);
+  }
+}

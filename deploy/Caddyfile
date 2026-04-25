@@ -9,3 +9,15 @@ ask.acton.guide {
 
   reverse_proxy ask-acton:8787
 }
+
+play.acton.guide {
+  encode zstd gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  reverse_proxy playground:8788
+}

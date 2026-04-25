@@ -1,0 +1,53 @@
+import { z } from "zod";
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PLAYGROUND_HOST: z.string().default("0.0.0.0"),
+  PLAYGROUND_PORT: z.coerce.number().int().positive().default(8788),
+  PLAYGROUND_ALLOWED_ORIGINS: z
+    .string()
+    .default("https://play.acton.guide,https://acton.guide,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8788,http://127.0.0.1:8788"),
+  PLAYGROUND_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  PLAYGROUND_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
+  PLAYGROUND_MAX_CODE_CHARS: z.coerce.number().int().positive().default(12000),
+  PLAYGROUND_MAX_STDIN_CHARS: z.coerce.number().int().nonnegative().default(4000),
+  PLAYGROUND_MAX_OUTPUT_CHARS: z.coerce.number().int().positive().default(20000),
+  PLAYGROUND_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(90),
+  PLAYGROUND_MAX_CONCURRENT_RUNS: z.coerce.number().int().positive().default(1),
+  PLAYGROUND_WORKSPACE_ROOT: z.string().default("/var/lib/ask-acton/playground"),
+  PLAYGROUND_DOCKER_BIN: z.string().default("docker"),
+  PLAYGROUND_ACTON_IMAGE: z.string().default("ghcr.io/actonlang/acton:latest"),
+  PLAYGROUND_CPU_LIMIT: z.string().default("2"),
+  PLAYGROUND_MEMORY_LIMIT: z.string().default("3g"),
+  PLAYGROUND_PIDS_LIMIT: z.coerce.number().int().positive().default(128)
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error("Invalid playground environment configuration");
+  console.error(z.treeifyError(parsed.error));
+  process.exit(1);
+}
+
+const env = parsed.data;
+
+export const playgroundConfig = {
+  nodeEnv: env.NODE_ENV,
+  host: env.PLAYGROUND_HOST,
+  port: env.PLAYGROUND_PORT,
+  allowedOrigins: env.PLAYGROUND_ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean),
+  rateLimitMax: env.PLAYGROUND_RATE_LIMIT_MAX,
+  rateLimitWindow: env.PLAYGROUND_RATE_LIMIT_WINDOW,
+  maxCodeChars: env.PLAYGROUND_MAX_CODE_CHARS,
+  maxStdinChars: env.PLAYGROUND_MAX_STDIN_CHARS,
+  maxOutputChars: env.PLAYGROUND_MAX_OUTPUT_CHARS,
+  timeoutSeconds: env.PLAYGROUND_TIMEOUT_SECONDS,
+  maxConcurrentRuns: env.PLAYGROUND_MAX_CONCURRENT_RUNS,
+  workspaceRoot: env.PLAYGROUND_WORKSPACE_ROOT,
+  dockerBin: env.PLAYGROUND_DOCKER_BIN,
+  actonImage: env.PLAYGROUND_ACTON_IMAGE,
+  cpuLimit: env.PLAYGROUND_CPU_LIMIT,
+  memoryLimit: env.PLAYGROUND_MEMORY_LIMIT,
+  pidsLimit: env.PLAYGROUND_PIDS_LIMIT
+} as const;

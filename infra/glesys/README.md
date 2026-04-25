@@ -27,5 +27,5 @@ terraform apply
 ```
 
 The provider and exact template names should be checked against the
-GleSYS project before applying. The defaults are intentionally small:
-2 vCPU, 2 GiB RAM, and 30 GiB disk.
+GleSYS project before applying. The defaults are sized for the first
+playground version: 4 vCPU, 4 GiB RAM, and 50 GiB disk.

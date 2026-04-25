@@ -8,11 +8,26 @@ services:
     expose:
       - "8787"
 
+  playground:
+    build:
+      context: .
+      dockerfile: Dockerfile.playground
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    expose:
+      - "8788"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/ask-acton/playground:/var/lib/ask-acton/playground
+
   caddy:
     image: caddy:2
     restart: unless-stopped
     depends_on:
       - ask-acton
+      - playground
     ports:
       - "80:80"
       - "443:443"

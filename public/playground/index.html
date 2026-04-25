@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Acton Playground</title>
+    <link rel="stylesheet" href="/playground.css">
+  </head>
+  <body>
+    <main class="playground">
+      <section class="playground__editor">
+        <header>
+          <p>Acton Playground</p>
+          <button id="run" type="button">Run</button>
+        </header>
+        <textarea id="code" spellcheck="false">actor main(env):
+    print("Hello from Acton")
+    env.exit(0)
+</textarea>
+      </section>
+
+      <section class="playground__output" aria-live="polite">
+        <header>
+          <p>Output</p>
+          <span id="status">Ready</span>
+        </header>
+        <pre id="output"></pre>
+      </section>
+    </main>
+
+    <script src="/playground.js"></script>
+  </body>
+</html>
