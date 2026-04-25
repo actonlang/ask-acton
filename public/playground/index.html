@@ -13,10 +13,13 @@
           <p>Acton Playground</p>
           <button id="run" type="button">Run</button>
         </header>
-        <textarea id="code" spellcheck="false">actor main(env):
+        <div class="editor-frame">
+          <pre id="line-numbers" aria-hidden="true">1</pre>
+          <textarea id="code" spellcheck="false" wrap="off">actor main(env):
     print("Hello from Acton")
     env.exit(0)
 </textarea>
+        </div>
       </section>
 
       <section class="playground__output" aria-live="polite">
@@ -27,16 +30,7 @@
         <div class="progress" aria-hidden="true">
           <span id="progress-bar"></span>
         </div>
-        <div class="output-streams">
-          <section class="output-stream">
-            <h2>Compiler</h2>
-            <pre id="compiler-output"></pre>
-          </section>
-          <section class="output-stream">
-            <h2>Program</h2>
-            <pre id="program-output"></pre>
-          </section>
-        </div>
+        <pre id="output"></pre>
       </section>
     </main>
 

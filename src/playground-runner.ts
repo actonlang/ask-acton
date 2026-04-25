@@ -38,16 +38,11 @@ async function runInDocker(
   const workspace = path.join(playgroundConfig.workspaceRoot, id);
   const sourcePath = path.join(workspace, "main.act");
   const started = Date.now();
-  let stage: PlaygroundRunStage = "preparing";
-  const outputState: { target: "compiler" | "program" } = {
-    target: "program"
-  };
 
   const setStage = (nextStage: PlaygroundRunStage) => {
-    stage = nextStage;
     onEvent?.({
       type: "status",
-      stage,
+      stage: nextStage,
       elapsedMs: Date.now() - started
     });
   };
@@ -64,7 +59,6 @@ async function runInDocker(
     stdio: ["pipe", "pipe", "pipe"]
   });
 
-  let compilerOutput = "";
   let stdout = "";
   let stderr = "";
   let pendingStderr = "";
@@ -80,15 +74,6 @@ async function runInDocker(
 
   child.stdout.on("data", (chunk: Buffer) => {
     const text = chunk.toString("utf8");
-
-    if (outputState.target === "compiler") {
-      const next = appendLimited(compilerOutput, text);
-      compilerOutput = next.value;
-      truncated = truncated || next.truncated;
-      onEvent?.({ type: "compiler", text });
-      return;
-    }
-
     const next = appendLimited(stdout, text);
     stdout = next.value;
     truncated = truncated || next.truncated;
@@ -96,18 +81,7 @@ async function runInDocker(
   });
 
   child.stderr.on("data", (chunk: Buffer) => {
-    pendingStderr = processStderr(chunk.toString("utf8"), pendingStderr, (nextStage) => {
-      outputState.target = nextStage === "compiling" ? "compiler" : "program";
-      setStage(nextStage);
-    }, (text) => {
-      if (outputState.target === "compiler") {
-        const next = appendLimited(compilerOutput, text);
-        compilerOutput = next.value;
-        truncated = truncated || next.truncated;
-        onEvent?.({ type: "compiler", text });
-        return;
-      }
-
+    pendingStderr = processStderr(chunk.toString("utf8"), pendingStderr, setStage, (text) => {
       const next = appendLimited(stderr, text);
       stderr = next.value;
       truncated = truncated || next.truncated;
@@ -118,17 +92,10 @@ async function runInDocker(
   try {
     const exitCode = await waitForChild(child);
     if (pendingStderr.length > 0) {
-      if (outputState.target === "compiler") {
-        const next = appendLimited(compilerOutput, pendingStderr);
-        compilerOutput = next.value;
-        truncated = truncated || next.truncated;
-        onEvent?.({ type: "compiler", text: pendingStderr });
-      } else {
-        const next = appendLimited(stderr, pendingStderr);
-        stderr = next.value;
-        truncated = truncated || next.truncated;
-        onEvent?.({ type: "stderr", text: pendingStderr });
-      }
+      const next = appendLimited(stderr, pendingStderr);
+      stderr = next.value;
+      truncated = truncated || next.truncated;
+      onEvent?.({ type: "stderr", text: pendingStderr });
     }
 
     setStage("complete");
@@ -137,7 +104,6 @@ async function runInDocker(
       id,
       status: timedOut ? "timeout" : exitCode === 0 ? "ok" : "error",
       exitCode,
-      compilerOutput,
       stdout,
       stderr: timedOut ? withTimeoutMessage(stderr) : stderr,
       durationMs,
@@ -194,9 +160,10 @@ function runnerCommand(scriptArgs: string[]): string {
   const timeout = playgroundConfig.timeoutSeconds;
   const script = [
     `printf ${shellQuote(compileMarker)} >&2`,
-    "acton --color never --timing /workspace/main.act >&2",
+    "acton --quiet --color never /workspace/main.act >&2",
     "compile_status=$?",
     "if [ \"$compile_status\" -ne 0 ]; then exit \"$compile_status\"; fi",
+    "if [ ! -x /workspace/main ]; then exit 1; fi",
     `printf ${shellQuote(runMarker)} >&2`,
     `exec /workspace/main ${quotedArgs}`
   ].join("\n");

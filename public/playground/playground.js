@@ -1,7 +1,7 @@
 const runButton = document.querySelector("#run");
 const code = document.querySelector("#code");
-const compilerOutput = document.querySelector("#compiler-output");
-const programOutput = document.querySelector("#program-output");
+const lineNumbers = document.querySelector("#line-numbers");
+const output = document.querySelector("#output");
 const status = document.querySelector("#status");
 const progressBar = document.querySelector("#progress-bar");
 
@@ -21,13 +21,15 @@ const stageProgress = {
   complete: 100
 };
 
+code.addEventListener("input", updateLineNumbers);
+code.addEventListener("scroll", syncLineNumberScroll);
 runButton.addEventListener("click", runCode);
+updateLineNumbers();
 
 async function runCode() {
   runButton.disabled = true;
   setStage("preparing");
-  compilerOutput.textContent = "";
-  programOutput.textContent = "";
+  output.textContent = "";
 
   try {
     const response = await fetch("/api/run/stream", {
@@ -54,7 +56,7 @@ async function runCode() {
   } catch (error) {
     status.textContent = "Failed";
     progressBar.style.width = "100%";
-    programOutput.textContent = "The playground is unavailable right now.";
+    output.textContent = "The playground is unavailable right now.";
     console.error(error);
   } finally {
     runButton.disabled = false;
@@ -114,13 +116,8 @@ function handleRunEvent(event) {
     return;
   }
 
-  if (event.type === "compiler") {
-    appendOutput(compilerOutput, event.text);
-    return;
-  }
-
   if (event.type === "stdout" || event.type === "stderr") {
-    appendOutput(programOutput, event.text);
+    appendOutput(output, event.text);
     return;
   }
 
@@ -132,11 +129,10 @@ function handleRunEvent(event) {
 function finishRun(result) {
   setStage("complete", result.durationMs);
   status.textContent = `${result.status} in ${result.durationMs} ms`;
-  compilerOutput.textContent = result.compilerOutput;
-  programOutput.textContent = formatProgramOutput(result);
+  output.textContent = formatOutput(result);
 }
 
-function formatProgramOutput(result) {
+function formatOutput(result) {
   const sections = [];
 
   if (result.stdout) {
@@ -168,4 +164,14 @@ function setStage(stage, elapsedMs) {
 function appendOutput(element, text) {
   element.textContent += text;
   element.scrollTop = element.scrollHeight;
+}
+
+function updateLineNumbers() {
+  const lineCount = Math.max(1, code.value.split("\n").length);
+  lineNumbers.textContent = Array.from({ length: lineCount }, (_, index) => String(index + 1)).join("\n");
+  syncLineNumberScroll();
+}
+
+function syncLineNumberScroll() {
+  lineNumbers.scrollTop = code.scrollTop;
 }

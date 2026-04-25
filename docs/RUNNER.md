@@ -30,10 +30,10 @@ the request finishes.
 
 The browser uses `POST /api/run/stream` for interactive runs. The
 endpoint returns newline-delimited JSON events for sandbox preparation,
-compilation, execution, compiler output, program stdout/stderr, and the
-final result. The compiler is invoked as `acton --color never --timing`
-instead of through `runacton`, because `runacton` intentionally passes
-`--quiet` and would hide useful progress output.
+compilation, execution, program stdout/stderr, and the final result. The
+compiler is invoked directly instead of through `runacton` so the runner
+can report distinct compile and run phases while keeping normal compiler
+chatter hidden.
 
 Requirements before enabling it broadly:
 

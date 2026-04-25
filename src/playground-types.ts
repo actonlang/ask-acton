@@ -8,7 +8,6 @@ export interface PlaygroundRunResponse {
   id: string;
   status: "ok" | "error" | "timeout";
   exitCode: number | null;
-  compilerOutput: string;
   stdout: string;
   stderr: string;
   durationMs: number;
@@ -22,10 +21,6 @@ export type PlaygroundRunEvent =
       type: "status";
       stage: PlaygroundRunStage;
       elapsedMs: number;
-    }
-  | {
-      type: "compiler";
-      text: string;
     }
   | {
       type: "stdout" | "stderr";
