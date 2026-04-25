@@ -5,7 +5,7 @@ const envSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(8787),
   OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
-  OPENAI_MODEL: z.string().default("gpt-5.5"),
+  OPENAI_MODEL: z.string().default("gpt-5.4-mini"),
   OPENAI_VECTOR_STORE_ID: z.string().optional(),
   ALLOWED_ORIGINS: z.string().default("https://acton.guide,http://localhost:3000,http://127.0.0.1:3000"),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(40),

@@ -4,7 +4,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { z } from "zod";
 import { config } from "./config.js";
-import { answerQuestion } from "./openai.js";
+import { answerQuestion, streamQuestion } from "./openai.js";
 
 const optionalText = (maxLength: number) =>
   z.preprocess((value) => {
@@ -101,6 +101,7 @@ const askPageHtml = `<!doctype html>
 
           <div class="actions">
             <button id="ask-button" type="submit">Ask Acton</button>
+            <button id="new-chat-button" class="secondary-button" type="button">New chat</button>
             <p id="status" role="status" aria-live="polite"></p>
           </div>
         </form>
@@ -116,10 +117,10 @@ const askPageHtml = `<!doctype html>
       </section>
 
       <section id="answer-panel" class="card answer-card" aria-live="polite" hidden>
-        <h2>Answer</h2>
-        <div id="answer-text" class="markdown-body"></div>
+        <h2>Conversation</h2>
+        <div id="messages" class="messages" role="log" aria-live="polite"></div>
         <div id="sources-panel" hidden>
-          <h3>Sources</h3>
+          <h3>Sources for latest answer</h3>
           <ul id="sources"></ul>
         </div>
       </section>
@@ -328,6 +329,17 @@ button:hover {
   filter: brightness(1.04);
 }
 
+.secondary-button {
+  border: 1px solid rgba(29, 122, 71, 0.28);
+  color: var(--accent-strong);
+  background: rgba(29, 122, 71, 0.08);
+  font-weight: 750;
+}
+
+.secondary-button:hover {
+  background: rgba(29, 122, 71, 0.14);
+}
+
 .task-button {
   min-height: 2.45rem;
   border: 1px solid transparent;
@@ -434,7 +446,42 @@ button:disabled {
   }
 }
 
-#answer-text {
+.messages {
+  display: grid;
+  gap: 1rem;
+}
+
+.message {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.message--user {
+  margin-left: clamp(0rem, 8vw, 6rem);
+  background: rgba(29, 122, 71, 0.08);
+}
+
+.message--assistant {
+  margin-right: clamp(0rem, 8vw, 6rem);
+  background: var(--bg-soft);
+}
+
+.message__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.message__body {
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -564,6 +611,12 @@ button:disabled {
   button {
     width: 100%;
   }
+
+  .message--user,
+  .message--assistant {
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -606,16 +659,18 @@ const askPageJs = `
 const form = document.querySelector("#ask-form");
 const askInput = document.querySelector("#ask-input");
 const askButton = document.querySelector("#ask-button");
+const newChatButton = document.querySelector("#new-chat-button");
 const statusText = document.querySelector("#status");
 const taskInstruction = document.querySelector("#task-instruction");
 const progressPanel = document.querySelector("#progress-panel");
 const progressMessage = document.querySelector("#progress-message");
 const elapsedTime = document.querySelector("#elapsed-time");
 const answerPanel = document.querySelector("#answer-panel");
-const answerText = document.querySelector("#answer-text");
+const messages = document.querySelector("#messages");
 const sourcesPanel = document.querySelector("#sources-panel");
 const sourcesList = document.querySelector("#sources");
 let selectedMode = "ask";
+let conversationHistory = [];
 let progressTimer;
 let progressStartedAt = 0;
 const progressMessages = [
@@ -644,6 +699,18 @@ document.querySelectorAll(".task-button").forEach((button) => {
   });
 });
 
+newChatButton.addEventListener("click", () => {
+  conversationHistory = [];
+  messages.replaceChildren();
+  sourcesList.replaceChildren();
+  sourcesPanel.hidden = true;
+  answerPanel.hidden = true;
+  askInput.value = "";
+  setSelectedMode("ask");
+  setStatus("");
+  askInput.focus();
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -653,31 +720,38 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
+  const requestPayload = {
+    ...payload,
+    history: conversationHistory.slice(-8)
+  };
+  const userHistoryContent = historyContentForPayload(payload);
+
+  appendMessage("user", displayTextForPayload(payload), selectedTaskLabel());
+  answerPanel.hidden = false;
   setLoading(true);
   setStatus("Asking Acton...");
   showProgress();
-  answerPanel.hidden = true;
-  answerText.replaceChildren();
   sourcesList.replaceChildren();
   sourcesPanel.hidden = true;
+  askInput.value = "";
 
   try {
-    const response = await fetch("/api/ask", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json"
-      },
-      body: JSON.stringify(payload)
+    const assistantMessage = appendMessage("assistant", "", "Ask Acton");
+    const data = await streamAnswer(requestPayload, assistantMessage.body);
+
+    conversationHistory.push({
+      role: "user",
+      content: userHistoryContent
     });
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(errorMessage(response, data));
-    }
-
-    renderAnswer(data);
+    conversationHistory.push({
+      role: "assistant",
+      content: data.answer || ""
+    });
+    renderSources(data);
+    scrollAnswerIntoView();
     setStatus("Answer ready.");
   } catch (error) {
+    appendMessage("assistant", error instanceof Error ? error.message : "Ask Acton failed.", "Error");
     setStatus(error instanceof Error ? error.message : "Ask Acton failed.", true);
   } finally {
     hideProgress();
@@ -714,6 +788,113 @@ function readPayload() {
   }
 
   return { question: input };
+}
+
+async function streamAnswer(payload, assistantBody) {
+  const response = await fetch("/api/ask/stream", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!response.ok) {
+    const data = contentType.includes("application/json")
+      ? await response.json().catch(() => ({}))
+      : {};
+    throw new Error(errorMessage(response, data));
+  }
+
+  if (!response.body) {
+    throw new Error("Ask Acton could not stream a response.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let answer = "";
+  let finalData;
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true }).replace(/\\r\\n/g, "\\n");
+    let separatorIndex = buffer.indexOf("\\n\\n");
+
+    while (separatorIndex !== -1) {
+      const block = buffer.slice(0, separatorIndex);
+      buffer = buffer.slice(separatorIndex + 2);
+      const event = parseServerSentEvent(block);
+
+      if (event) {
+        if (event.name === "delta") {
+          answer += event.data.delta || "";
+          assistantBody.innerHTML = renderMarkdown(answer);
+        } else if (event.name === "done") {
+          finalData = event.data;
+          answer = finalData.answer || answer;
+          assistantBody.innerHTML = renderMarkdown(answer || "Ask Acton did not return an answer.");
+        } else if (event.name === "error") {
+          throw new Error(errorMessage({ status: 502 }, event.data));
+        }
+      }
+
+      separatorIndex = buffer.indexOf("\\n\\n");
+    }
+  }
+
+  if (!finalData) {
+    throw new Error("Ask Acton stream ended before the answer was complete.");
+  }
+
+  return finalData;
+}
+
+function parseServerSentEvent(block) {
+  const lines = block.split("\\n");
+  let name = "message";
+  const dataLines = [];
+
+  for (const line of lines) {
+    if (line.startsWith("event:")) {
+      name = line.slice("event:".length).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice("data:".length).trimStart());
+    }
+  }
+
+  if (dataLines.length === 0) {
+    return undefined;
+  }
+
+  return {
+    name,
+    data: JSON.parse(dataLines.join("\\n"))
+  };
+}
+
+function displayTextForPayload(payload) {
+  return payload.error || payload.code || payload.question || "";
+}
+
+function historyContentForPayload(payload) {
+  if (payload.error) {
+    return payload.question + "\\n\\nError output:\\n" + payload.error;
+  }
+  if (payload.code) {
+    return payload.question + "\\n\\nActon code:\\n" + payload.code;
+  }
+  return payload.question || "";
+}
+
+function selectedTaskLabel() {
+  const activeButton = document.querySelector(".task-button.active");
+  return activeButton ? activeButton.textContent.trim().replace(/^✓\\s*/, "") : "You";
 }
 
 function setSelectedMode(mode) {
@@ -756,9 +937,13 @@ function updateProgress() {
 }
 
 function renderAnswer(data) {
-  answerText.innerHTML = renderMarkdown(data.answer || "Ask Acton did not return an answer.");
+  appendMessage("assistant", data.answer || "Ask Acton did not return an answer.", "Ask Acton");
   answerPanel.hidden = false;
+  renderSources(data);
+  scrollAnswerIntoView();
+}
 
+function renderSources(data) {
   const citations = Array.isArray(data.citations) ? data.citations : [];
   const filenames = citations
     .map((citation) => citation.filename || citation.fileId)
@@ -771,12 +956,35 @@ function renderAnswer(data) {
   }
 
   sourcesPanel.hidden = sourcesList.childElementCount === 0;
+}
+
+function scrollAnswerIntoView() {
   window.requestAnimationFrame(() => {
     answerPanel.scrollIntoView({
       behavior: "smooth",
       block: "start"
     });
   });
+}
+
+function appendMessage(role, content, label) {
+  const message = document.createElement("article");
+  message.className = "message message--" + role;
+
+  const header = document.createElement("div");
+  header.className = "message__header";
+  header.textContent = label || (role === "user" ? "You" : "Ask Acton");
+
+  const body = document.createElement("div");
+  body.className = "message__body markdown-body";
+  body.innerHTML = renderMarkdown(content);
+
+  message.append(header, body);
+  messages.append(message);
+  return {
+    message,
+    body
+  };
 }
 
 function setLoading(loading) {
@@ -933,6 +1141,46 @@ app.get("/ask.css", async (_request, reply) => reply.type("text/css; charset=utf
 app.get("/ask.js", async (_request, reply) =>
   reply.type("application/javascript; charset=utf-8").send(askPageJs)
 );
+
+app.post("/api/ask/stream", async (request, reply) => {
+  const requestId = request.id;
+  const parsed = askSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_request",
+      requestId,
+      details: z.treeifyError(parsed.error)
+    });
+  }
+
+  reply.hijack();
+  reply.raw.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+
+  const sendEvent = (event: string, data: unknown) => {
+    reply.raw.write(`event: ${event}\n`);
+    reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    for await (const event of streamQuestion(parsed.data, requestId)) {
+      sendEvent(event.type, event);
+    }
+  } catch (error) {
+    request.log.error({ err: error, requestId }, "OpenAI stream failed");
+    sendEvent("error", {
+      error: "ask_acton_failed",
+      requestId
+    });
+  } finally {
+    reply.raw.end();
+  }
+});
 
 app.post("/api/ask", async (request, reply) => {
   const requestId = request.id;

@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import type { ResponseCreateParamsBase } from "openai/resources/responses/responses";
 import { config } from "./config.js";
 import { buildUserInput, systemPrompt } from "./prompt.js";
 import type { AskRequest, AskResponse, ChatMessage, SourceCitation } from "./types.js";
@@ -8,6 +9,51 @@ const client = new OpenAI({
 });
 
 export async function answerQuestion(request: AskRequest, requestId: string): Promise<AskResponse> {
+  const response = await client.responses.create({
+    ...responseParams(request),
+    stream: false
+  });
+
+  return {
+    answer: response.output_text.trim(),
+    model: config.openaiModel,
+    requestId,
+    citations: collectCitations(response)
+  };
+}
+
+export async function* streamQuestion(
+  request: AskRequest,
+  requestId: string
+): AsyncGenerator<
+  | { type: "delta"; delta: string }
+  | { type: "done"; answer: string; model: string; requestId: string; citations: SourceCitation[] }
+> {
+  const stream = client.responses.stream(responseParams(request));
+  let answer = "";
+
+  for await (const event of stream) {
+    if (event.type === "response.output_text.delta" && event.delta) {
+      answer += event.delta;
+      yield {
+        type: "delta",
+        delta: event.delta
+      };
+    }
+  }
+
+  const response = await stream.finalResponse();
+
+  yield {
+    type: "done",
+    answer: answer.trim(),
+    model: config.openaiModel,
+    requestId,
+    citations: collectCitations(response)
+  };
+}
+
+function responseParams(request: AskRequest): Omit<ResponseCreateParamsBase, "stream"> {
   const history = sanitizeHistory(request.history ?? []);
   const input: OpenAI.Responses.ResponseInput = [
     {
@@ -37,17 +83,10 @@ export async function answerQuestion(request: AskRequest, requestId: string): Pr
       ]
     : undefined;
 
-  const response = await client.responses.create({
+  return {
     model: config.openaiModel,
     input,
     tools
-  });
-
-  return {
-    answer: response.output_text.trim(),
-    model: config.openaiModel,
-    requestId,
-    citations: collectCitations(response)
   };
 }
 
