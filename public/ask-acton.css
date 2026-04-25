@@ -1,0 +1,146 @@
+.ask-acton {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  color: #102018;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.ask-acton__button,
+.ask-acton__send,
+.ask-acton__close {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.ask-acton__button {
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: #0f8f55;
+  color: white;
+  box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 22%);
+  font-weight: 700;
+}
+
+.ask-acton__panel {
+  position: absolute;
+  right: 0;
+  bottom: 3.7rem;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(38rem, calc(100vh - 5.5rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(19 80 53 / 22%);
+  border-radius: 0.75rem;
+  background: #fbfff9;
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 25%);
+}
+
+.ask-acton__panel[hidden] {
+  display: none;
+}
+
+.ask-acton__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: #e7f6ec;
+  border-bottom: 1px solid rgb(19 80 53 / 16%);
+}
+
+.ask-acton__close {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: transparent;
+  color: #244032;
+  font-weight: 700;
+}
+
+.ask-acton__messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 10rem;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.ask-acton__message {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.ask-acton__message p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ask-acton__message--user {
+  color: #1b3a5f;
+}
+
+.ask-acton__message--assistant {
+  color: #1e392b;
+}
+
+.ask-acton__form {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-top: 1px solid rgb(19 80 53 / 16%);
+}
+
+.ask-acton__input {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  min-height: 5.5rem;
+  max-height: 14rem;
+  border: 1px solid rgb(19 80 53 / 28%);
+  border-radius: 0.5rem;
+  padding: 0.7rem;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+
+.ask-acton__send {
+  justify-self: end;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  background: #1f6feb;
+  color: white;
+  font-weight: 700;
+}
+
+.ask-acton__send:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.ask-acton__notice {
+  margin: 0;
+  padding: 0 0.85rem 0.85rem;
+  color: #5f6c64;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 560px) {
+  .ask-acton {
+    right: 0.75rem;
+    bottom: 0.75rem;
+  }
+
+  .ask-acton__panel {
+    bottom: 3.4rem;
+  }
+}
