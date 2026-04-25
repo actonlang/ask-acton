@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Acton Playground</title>
-    <link rel="stylesheet" href="/playground.css?v=20260426-nav-font">
+    <link rel="stylesheet" href="/playground.css?v=20260426-editor-run">
   </head>
   <body>
     <header class="app-header">
@@ -17,12 +17,11 @@
     </header>
 
     <main class="playground">
-      <div class="playground__toolbar">
-        <p>Runs are limited to 15 seconds.</p>
-        <button id="run" type="button">Run</button>
-      </div>
-
       <section class="playground__editor">
+        <header class="panel-header">
+          <p>Source</p>
+          <button id="run" type="button">Run</button>
+        </header>
         <div class="editor-frame">
           <pre id="line-numbers" aria-hidden="true">1</pre>
           <textarea id="code" spellcheck="false" wrap="off">actor main(env):
@@ -33,7 +32,7 @@
       </section>
 
       <section class="playground__output" aria-live="polite">
-        <header>
+        <header class="panel-header">
           <p>Output</p>
           <span id="status">Ready</span>
         </header>
@@ -44,6 +43,6 @@
       </section>
     </main>
 
-    <script src="/playground.js?v=20260426-nav-font"></script>
+    <script src="/playground.js?v=20260426-editor-run"></script>
   </body>
 </html>
