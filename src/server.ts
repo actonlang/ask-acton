@@ -42,14 +42,16 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
+const assetVersion = "20260425-code-contrast";
+
 const askPageHtml = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ask Acton</title>
-    <link rel="stylesheet" href="/ask.css">
-    <script type="module" src="/ask.js"></script>
+    <link rel="stylesheet" href="/ask.css?v=${assetVersion}">
+    <script type="module" src="/ask.js?v=${assetVersion}"></script>
   </head>
   <body>
     <main>
@@ -493,10 +495,6 @@ button:disabled {
   color: #151617;
 }
 
-.message--user .message__header {
-  color: #5d4810;
-}
-
 .message--assistant {
   margin-right: clamp(0rem, 8vw, 6rem);
   background: rgba(255, 255, 255, 0.78);
@@ -512,6 +510,16 @@ button:disabled {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.message--user,
+.message--user .message__body,
+.message--user .markdown-body {
+  color: #151617;
+}
+
+.message--user .message__header {
+  color: #5d4810;
 }
 
 .message__body {
@@ -570,6 +578,7 @@ button:disabled {
   margin: 0.9rem 0;
   padding: 1rem;
   background: var(--code-bg);
+  color: #151617;
   line-height: 1.5;
 }
 
@@ -590,6 +599,7 @@ button:disabled {
   display: block;
   padding: 0;
   background: transparent;
+  color: inherit;
   font-size: 0.92rem;
 }
 
@@ -700,6 +710,7 @@ button:disabled {
   .message--assistant,
   .markdown-body pre {
     background: #292d30;
+    color: var(--text);
   }
 
   .message--user {
@@ -710,6 +721,11 @@ button:disabled {
   .markdown-body code {
     color: #151617;
     background: var(--accent-soft);
+  }
+
+  .markdown-body pre code {
+    color: var(--text);
+    background: transparent;
   }
 }
 `.trim();
@@ -1239,12 +1255,16 @@ app.get("/healthz", async () => ({
   service: "ask-acton"
 }));
 
-app.get("/", async (_request, reply) => reply.type("text/html; charset=utf-8").send(askPageHtml));
+app.get("/", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/html; charset=utf-8").send(askPageHtml)
+);
 
-app.get("/ask.css", async (_request, reply) => reply.type("text/css; charset=utf-8").send(askPageCss));
+app.get("/ask.css", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/css; charset=utf-8").send(askPageCss)
+);
 
 app.get("/ask.js", async (_request, reply) =>
-  reply.type("application/javascript; charset=utf-8").send(askPageJs)
+  reply.header("Cache-Control", "no-store").type("application/javascript; charset=utf-8").send(askPageJs)
 );
 
 app.post("/api/ask/stream", async (request, reply) => {
