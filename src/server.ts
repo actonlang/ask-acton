@@ -42,7 +42,7 @@ const askSchema = z
     message: "Provide a question, Acton code, or error output."
   });
 
-const assetVersion = "20260426-nav-metrics";
+const assetVersion = "20260426-nav-font";
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -130,6 +130,16 @@ const askPageHtml = `<!doctype html>
 </html>`;
 
 const askPageCss = `
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-weight: 800;
+  src:
+    local("Open Sans ExtraBold"),
+    local("OpenSans-ExtraBold"),
+    url("https://acton.guide/fonts/open-sans-v17-all-charsets-800.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light dark;
   --bg: #eef0ef;
@@ -204,8 +214,10 @@ main {
   position: relative;
   display: inline-flex;
   align-items: center;
+  min-height: 50px;
   padding: 0 10px;
   color: var(--accent);
+  font-family: "Open Sans", sans-serif;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
