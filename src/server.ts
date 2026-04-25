@@ -780,7 +780,6 @@ form.addEventListener("submit", async (event) => {
       content: data.answer || ""
     });
     renderSources(data);
-    scrollAnswerIntoView();
     setStatus("Answer ready.");
   } catch (error) {
     appendMessage("assistant", error instanceof Error ? error.message : "Ask Acton failed.", "Error");
@@ -995,7 +994,6 @@ function renderAnswer(data) {
   appendMessage("assistant", data.answer || "Ask Acton did not return an answer.", "Ask Acton");
   answerPanel.hidden = false;
   renderSources(data);
-  scrollAnswerIntoView();
 }
 
 function renderSources(data) {
@@ -1011,15 +1009,6 @@ function renderSources(data) {
   }
 
   sourcesPanel.hidden = sourcesList.childElementCount === 0;
-}
-
-function scrollAnswerIntoView() {
-  window.requestAnimationFrame(() => {
-    answerPanel.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  });
 }
 
 function appendMessage(role, content, label) {
