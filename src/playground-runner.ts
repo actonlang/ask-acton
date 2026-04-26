@@ -11,7 +11,8 @@ type PlaygroundRunEventHandler = (event: PlaygroundRunEvent) => void;
 
 const compileMarker = "__ACTON_PLAYGROUND_STAGE__:compile\n";
 const runMarker = "__ACTON_PLAYGROUND_STAGE__:run\n";
-const stageMarkers = [compileMarker, runMarker] as const;
+const typeMarker = "__ACTON_PLAYGROUND_STAGE__:types\n";
+const stageMarkers = [typeMarker, compileMarker, runMarker] as const;
 
 export function isPlaygroundAtCapacity(): boolean {
   return activeRuns >= playgroundConfig.maxConcurrentRuns;
@@ -41,6 +42,7 @@ async function runInDocker(
   const id = randomUUID();
   const workspace = path.join(playgroundConfig.workspaceRoot, id);
   const sourcePath = path.join(workspace, "main.act");
+  const signaturesPath = path.join(workspace, ".acton-playground-sigs");
   const started = Date.now();
 
   const setStage = (nextStage: PlaygroundRunStage) => {
@@ -96,6 +98,7 @@ async function runInDocker(
   try {
     const exitCode = await waitForChild(child);
     const timeout = timedOut || isTimeoutExit(exitCode);
+    const signatures = await readLimitedFile(signaturesPath);
     if (pendingStderr.length > 0) {
       const next = appendLimited(stderr, pendingStderr);
       stderr = next.value;
@@ -111,8 +114,9 @@ async function runInDocker(
       exitCode,
       stdout,
       stderr: timeout ? withTimeoutMessage(stderr) : stderr,
+      signatures: signatures.value,
       durationMs,
-      truncated
+      truncated: truncated || signatures.truncated
     };
   } finally {
     clearTimeout(timer);
@@ -164,6 +168,10 @@ function runnerCommand(scriptArgs: string[]): string {
   const quotedArgs = scriptArgs.map(shellQuote).join(" ");
   const timeout = playgroundConfig.timeoutSeconds;
   const script = [
+    `printf ${shellQuote(typeMarker)} >&2`,
+    "acton --quiet --color never --sigs /workspace/main.act > /workspace/.acton-playground-sigs",
+    "sigs_status=$?",
+    "if [ \"$sigs_status\" -ne 0 ]; then exit \"$sigs_status\"; fi",
     `printf ${shellQuote(compileMarker)} >&2`,
     "acton --quiet --color never --tempdir /tmp/acton-build /workspace/main.act >&2",
     "compile_status=$?",
@@ -195,6 +203,23 @@ function appendLimited(current: string, chunk: string): { value: string; truncat
     value: combined.slice(0, max),
     truncated: true
   };
+}
+
+async function readLimitedFile(filePath: string): Promise<{ value: string; truncated: boolean }> {
+  try {
+    const content = await fs.readFile(filePath, "utf8");
+    return appendLimited("", content);
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return { value: "", truncated: false };
+    }
+
+    throw error;
+  }
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && "code" in error;
 }
 
 function waitForChild(child: ReturnType<typeof spawn>): Promise<number | null> {
@@ -236,11 +261,19 @@ function processStderr(
       appendText(before);
     }
 
-    setStage(next.marker === compileMarker ? "compiling" : "running");
+    setStage(markerStage(next.marker));
     text = text.slice(next.index + next.marker.length);
   }
 
   return "";
+}
+
+function markerStage(marker: typeof stageMarkers[number]): PlaygroundRunStage {
+  if (marker === typeMarker) {
+    return "typing";
+  }
+
+  return marker === compileMarker ? "compiling" : "running";
 }
 
 function nextMarker(text: string): { index: number; marker: typeof stageMarkers[number] } | undefined {

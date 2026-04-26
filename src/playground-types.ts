@@ -10,11 +10,12 @@ export interface PlaygroundRunResponse {
   exitCode: number | null;
   stdout: string;
   stderr: string;
+  signatures: string;
   durationMs: number;
   truncated: boolean;
 }
 
-export type PlaygroundRunStage = "preparing" | "starting" | "compiling" | "running" | "complete";
+export type PlaygroundRunStage = "preparing" | "starting" | "typing" | "compiling" | "running" | "complete";
 
 export type PlaygroundRunEvent =
   | {
