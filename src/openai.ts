@@ -88,6 +88,7 @@ function responseParams(request: AskRequest): Omit<ResponseCreateParamsBase, "st
 
   return {
     model: config.openaiModel,
+    max_output_tokens: config.openaiMaxOutputTokens,
     input,
     tools
   };

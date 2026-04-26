@@ -68,7 +68,8 @@
         });
 
         if (!response.ok) {
-          throw new Error(`Ask Acton returned ${response.status}`);
+          const data = await response.json().catch(() => ({}));
+          throw new Error(errorMessage(response, data));
         }
 
         const data = await response.json();
@@ -119,5 +120,21 @@
   function setBusy(root, busy) {
     root.classList.toggle("ask-acton--busy", busy);
     root.querySelector(".ask-acton__send").disabled = busy;
+  }
+
+  function errorMessage(response, data) {
+    if (response.status === 429) {
+      return "Ask Acton is receiving too many requests. Wait a moment and try again.";
+    }
+
+    if (data && data.error === "not_acton_related") {
+      return data.message || "Ask Acton can only answer questions about Acton.";
+    }
+
+    if (data && data.error === "invalid_request") {
+      return "The request is invalid. Shorten the text and try again.";
+    }
+
+    return `Ask Acton returned ${response.status}`;
   }
 })();

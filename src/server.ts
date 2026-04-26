@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import { z } from "zod";
 import { config } from "./config.js";
 import { answerQuestion, streamQuestion } from "./openai.js";
+import { isActonRelated } from "./scope.js";
 
 const optionalText = (maxLength: number) =>
   z.preprocess((value) => {
@@ -43,6 +44,18 @@ const askSchema = z
   });
 
 const assetVersion = "20260426-nav-font";
+const askRouteOptions = {
+  config: {
+    rateLimit: {
+      max: config.askRateLimitMax,
+      timeWindow: config.askRateLimitWindow
+    }
+  }
+};
+const notActonRelatedResponse = {
+  error: "not_acton_related",
+  message: "Ask Acton can only answer questions about Acton."
+};
 
 const askPageHtml = `<!doctype html>
 <html lang="en">
@@ -1263,6 +1276,9 @@ function errorMessage(response, data) {
   if (data && data.error === "invalid_request") {
     return "The request is invalid. Shorten the text and try again.";
   }
+  if (data && data.error === "not_acton_related") {
+    return data.message || "Ask Acton can only answer questions about Acton.";
+  }
   if (data && data.requestId) {
     return "Ask Acton failed. Request id: " + data.requestId;
   }
@@ -1402,7 +1418,7 @@ app.get("/ask.js", async (_request, reply) =>
   reply.header("Cache-Control", "no-store").type("application/javascript; charset=utf-8").send(askPageJs)
 );
 
-app.post("/api/ask/stream", async (request, reply) => {
+app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
   const requestId = request.id;
   const parsed = askSchema.safeParse(request.body);
 
@@ -1411,6 +1427,13 @@ app.post("/api/ask/stream", async (request, reply) => {
       error: "invalid_request",
       requestId,
       details: z.treeifyError(parsed.error)
+    });
+  }
+
+  if (!isActonRelated(parsed.data)) {
+    return reply.code(422).send({
+      ...notActonRelatedResponse,
+      requestId
     });
   }
 
@@ -1442,7 +1465,7 @@ app.post("/api/ask/stream", async (request, reply) => {
   }
 });
 
-app.post("/api/ask", async (request, reply) => {
+app.post("/api/ask", askRouteOptions, async (request, reply) => {
   const requestId = request.id;
   const parsed = askSchema.safeParse(request.body);
 
@@ -1451,6 +1474,13 @@ app.post("/api/ask", async (request, reply) => {
       error: "invalid_request",
       requestId,
       details: z.treeifyError(parsed.error)
+    });
+  }
+
+  if (!isActonRelated(parsed.data)) {
+    return reply.code(422).send({
+      ...notActonRelatedResponse,
+      requestId
     });
   }
 
