@@ -180,6 +180,12 @@ body {
   font-weight: 700;
 }
 
+.panel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .panel-header small {
   display: block;
   margin-top: 0.2rem;
@@ -206,6 +212,36 @@ button:hover {
 button:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.button-secondary,
+.result-tab {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: #f7f8f6;
+}
+
+.button-secondary:hover,
+.result-tab:hover {
+  background: rgba(255, 210, 31, 0.12);
+}
+
+.result-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.result-tab {
+  min-height: 1.9rem;
+  padding: 0 0.75rem;
+  color: var(--muted);
+}
+
+.result-tab.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 textarea,
@@ -252,6 +288,10 @@ pre {
 
 .playground__output pre {
   background: var(--output-bg);
+}
+
+.result-view[hidden] {
+  display: none;
 }
 
 .progress {

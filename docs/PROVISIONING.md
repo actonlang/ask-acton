@@ -17,6 +17,7 @@ Provisioning needs:
 - DNS records for `ask.acton.guide` and `play.acton.guide` pointing at
   the VM.
 - An OpenAI API key for Ask Acton.
+- A GitHub token with gist access for playground sharing.
 - A decision on whether the runner image should track nightly, stable,
   or a pinned commit. The included `runner-image/Dockerfile` currently
   tracks the Acton tip APT repository.
@@ -118,6 +119,18 @@ Set at least:
 ```text
 OPENAI_API_KEY=...
 OPENAI_VECTOR_STORE_ID=vs_...
+PLAYGROUND_DOCKER_NETWORK=acton-playground-runners
+GITHUB_GIST_TOKEN=...
+```
+
+Create the dedicated runner network and egress rules before starting the
+playground:
+
+```sh
+sudo deploy/playground-egress.sh
+sudo cp deploy/acton-playground-egress.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now acton-playground-egress.service
 ```
 
 Build the Acton runner image and start the services:

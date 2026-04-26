@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Acton Playground</title>
-    <link rel="stylesheet" href="/playground.css?v=20260426-editor-run">
+    <link rel="stylesheet" href="/playground.css?v=20260426-gists">
   </head>
   <body>
     <header class="app-header">
@@ -20,7 +20,11 @@
       <section class="playground__editor">
         <header class="panel-header">
           <p>Source</p>
-          <button id="run" type="button">Run</button>
+          <div class="panel-actions">
+            <button id="share" class="button-secondary" type="button">Share</button>
+            <button id="show-types" class="button-secondary" type="button">Show types</button>
+            <button id="run" type="button">Run</button>
+          </div>
         </header>
         <div class="editor-frame">
           <pre id="line-numbers" aria-hidden="true">1</pre>
@@ -33,16 +37,20 @@
 
       <section class="playground__output" aria-live="polite">
         <header class="panel-header">
-          <p>Output</p>
+          <div class="result-tabs" role="tablist" aria-label="Run results">
+            <button id="output-tab" class="result-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="output">Output</button>
+            <button id="types-tab" class="result-tab" type="button" role="tab" aria-selected="false" aria-controls="types-output">Types</button>
+          </div>
           <span id="status">Ready</span>
         </header>
         <div class="progress" aria-hidden="true">
           <span id="progress-bar"></span>
         </div>
-        <pre id="output"></pre>
+        <pre id="output" class="result-view is-active" role="tabpanel" aria-labelledby="output-tab"></pre>
+        <pre id="types-output" class="result-view" role="tabpanel" aria-labelledby="types-tab" hidden></pre>
       </section>
     </main>
 
-    <script src="/playground.js?v=20260426-editor-run"></script>
+    <script src="/playground.js?v=20260426-gists"></script>
   </body>
 </html>

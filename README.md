@@ -54,6 +54,10 @@ The playground expects Docker to be available and
 `PLAYGROUND_ACTON_IMAGE` to point at an image containing `acton` and
 `runacton`.
 
+Set `GITHUB_GIST_TOKEN` to enable playground sharing. The playground
+creates unlisted gists through the server; the token is never sent to
+the browser.
+
 Build the default runner image:
 
 ```sh
@@ -131,7 +135,8 @@ docker compose up -d --build
 
 The `.env` file must include `OPENAI_API_KEY`. Ask Acton also needs
 `OPENAI_VECTOR_STORE_ID` from the indexing step if it should answer from
-the guide instead of only the base model context. The default playground
+the guide instead of only the base model context. Playground sharing
+needs `GITHUB_GIST_TOKEN` with gist access. The default playground
 settings allow up to 10 active Acton snippets with a 15 second timeout
 per snippet.
 

@@ -14,12 +14,15 @@ Recommended shape:
 - `caddy`: routes `ask.acton.guide` and later `run.acton.guide` or
   `play.acton.guide`.
 
-The first implementation uses Docker with no network, CPU/memory/PID
-limits, dropped Linux capabilities, `no-new-privileges`, a read-only
-container filesystem, and a temporary per-run workspace. The default
-limits allow 10 active compile/run tasks with a 15 second timeout and a
-3 GiB container memory limit per task. Additional requests are rejected
-with `playground_busy` instead of being queued indefinitely.
+The first implementation uses Docker with CPU/memory/PID limits,
+dropped Linux capabilities, `no-new-privileges`, a read-only container
+filesystem, and a temporary per-run workspace. Production runners should
+use `PLAYGROUND_DOCKER_NETWORK` to place snippet containers on a
+dedicated Docker network with host firewall rules that allow outbound
+TCP 80/443 plus DNS and drop the rest. The default limits allow 10 active
+compile/run tasks with a 15 second timeout and a 3 GiB container memory
+limit per task. Additional requests are rejected with `playground_busy`
+instead of being queued indefinitely.
 
 The public API also has request rate limiting. The default is 10
 requests per minute per client IP, enforced by the Fastify service behind
@@ -50,6 +53,11 @@ compilation, execution, program stdout/stderr, and the final result. The
 compiler is invoked directly instead of through `runacton` so the runner
 can report distinct compile and run phases while keeping normal compiler
 chatter hidden.
+
+Playground sharing uses GitHub Gists through the server-side
+`GITHUB_GIST_TOKEN`. The browser posts code to `POST /api/gists`, the
+server creates an unlisted gist, and shared links load snippets back with
+`GET /api/gists/:id`. The token is never sent to the browser.
 
 Requirements before enabling it broadly:
 

@@ -5,8 +5,9 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import staticFiles from "@fastify/static";
-import Fastify from "fastify";
+import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
+import { createPlaygroundGist, fetchPlaygroundGist, GistError } from "./gists.js";
 import { playgroundConfig } from "./playground-config.js";
 import { isPlaygroundAtCapacity, runActonSnippet } from "./playground-runner.js";
 
@@ -18,6 +19,26 @@ const runSchema = z.object({
   stdin: z.string().max(playgroundConfig.maxStdinChars).optional(),
   args: z.array(z.string().max(200)).max(8).optional()
 });
+
+const gistSchema = z.object({
+  code: z
+    .string()
+    .max(playgroundConfig.maxCodeChars)
+    .refine((value) => value.trim().length > 0, "Code must not be empty.")
+});
+
+const gistParamsSchema = z.object({
+  id: z.string().min(1).max(64)
+});
+
+const gistRouteOptions = {
+  config: {
+    rateLimit: {
+      max: playgroundConfig.gistRateLimitMax,
+      timeWindow: playgroundConfig.gistRateLimitWindow
+    }
+  }
+};
 
 const app = Fastify({
   logger: {
@@ -140,6 +161,57 @@ app.post("/api/run/stream", async (request, reply) => {
     .send(stream);
 });
 
+app.post("/api/gists", gistRouteOptions, async (request, reply) => {
+  const requestId = request.id;
+  const parsed = gistSchema.safeParse(request.body);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_request",
+      requestId,
+      details: z.treeifyError(parsed.error)
+    });
+  }
+
+  try {
+    const gist = await createPlaygroundGist(parsed.data.code);
+    return {
+      id: gist.id,
+      htmlUrl: gist.htmlUrl
+    };
+  } catch (error) {
+    return handleGistError(error, request, reply, requestId);
+  }
+});
+
+app.get("/api/gists/:id", gistRouteOptions, async (request, reply) => {
+  const requestId = request.id;
+  const parsed = gistParamsSchema.safeParse(request.params);
+
+  if (!parsed.success) {
+    return reply.code(400).send({
+      error: "invalid_request",
+      requestId,
+      details: z.treeifyError(parsed.error)
+    });
+  }
+
+  try {
+    const gist = await fetchPlaygroundGist(parsed.data.id);
+
+    if (gist.code.length > playgroundConfig.maxCodeChars) {
+      return reply.code(413).send({
+        error: "gist_too_large",
+        requestId
+      });
+    }
+
+    return gist;
+  } catch (error) {
+    return handleGistError(error, request, reply, requestId);
+  }
+});
+
 app.setErrorHandler((error, request, reply) => {
   request.log.error({ err: error, requestId: request.id }, "Unhandled request error");
   reply.code(500).send({
@@ -155,4 +227,23 @@ await app.listen({
 
 function writeStreamEvent(stream: PassThrough, event: unknown): void {
   stream.write(`${JSON.stringify(event)}\n`);
+}
+
+function handleGistError(error: unknown, request: FastifyRequest, reply: FastifyReply, requestId: string): unknown {
+  if (error instanceof GistError) {
+    if (error.statusCode >= 500) {
+      request.log.error({ err: error, requestId }, "GitHub gist request failed");
+    }
+
+    return reply.code(error.statusCode).send({
+      error: error.message,
+      requestId
+    });
+  }
+
+  request.log.error({ err: error, requestId }, "GitHub gist request failed");
+  return reply.code(500).send({
+    error: "gist_failed",
+    requestId
+  });
 }

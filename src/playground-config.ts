@@ -21,7 +21,12 @@ const envSchema = z.object({
   PLAYGROUND_ACTON_IMAGE: z.string().default("ghcr.io/actonlang/acton:latest"),
   PLAYGROUND_CPU_LIMIT: z.string().default("2"),
   PLAYGROUND_MEMORY_LIMIT: z.string().default("3g"),
-  PLAYGROUND_PIDS_LIMIT: z.coerce.number().int().positive().default(128)
+  PLAYGROUND_PIDS_LIMIT: z.coerce.number().int().positive().default(128),
+  GITHUB_GIST_TOKEN: z.string().default(""),
+  PLAYGROUND_GIST_FILENAME: z.string().default("main.act"),
+  PLAYGROUND_GIST_DESCRIPTION: z.string().default("Acton playground snippet"),
+  PLAYGROUND_GIST_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  PLAYGROUND_GIST_RATE_LIMIT_WINDOW: z.string().default("1 minute")
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -53,5 +58,10 @@ export const playgroundConfig = {
   actonImage: env.PLAYGROUND_ACTON_IMAGE,
   cpuLimit: env.PLAYGROUND_CPU_LIMIT,
   memoryLimit: env.PLAYGROUND_MEMORY_LIMIT,
-  pidsLimit: env.PLAYGROUND_PIDS_LIMIT
+  pidsLimit: env.PLAYGROUND_PIDS_LIMIT,
+  githubGistToken: env.GITHUB_GIST_TOKEN.trim(),
+  gistFilename: env.PLAYGROUND_GIST_FILENAME.trim() || "main.act",
+  gistDescription: env.PLAYGROUND_GIST_DESCRIPTION.trim() || "Acton playground snippet",
+  gistRateLimitMax: env.PLAYGROUND_GIST_RATE_LIMIT_MAX,
+  gistRateLimitWindow: env.PLAYGROUND_GIST_RATE_LIMIT_WINDOW
 } as const;
