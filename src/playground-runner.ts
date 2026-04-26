@@ -125,13 +125,14 @@ async function runInDocker(
 }
 
 function dockerArgs(containerName: string, workspace: string, scriptArgs: string[]): string[] {
+  const networkArgs = playgroundConfig.dockerNetwork.length > 0 ? ["--network", playgroundConfig.dockerNetwork] : [];
+
   return [
     "run",
     "--rm",
     "--name",
     containerName,
-    "--network",
-    "none",
+    ...networkArgs,
     "--cpus",
     playgroundConfig.cpuLimit,
     "--memory",

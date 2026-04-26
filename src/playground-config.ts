@@ -6,7 +6,7 @@ const envSchema = z.object({
   PLAYGROUND_PORT: z.coerce.number().int().positive().default(8788),
   PLAYGROUND_ALLOWED_ORIGINS: z
     .string()
-    .default("https://play.acton.guide,https://acton.guide,https://www.acton-lang.org,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8788,http://127.0.0.1:8788"),
+    .default("https://play.acton.guide,https://acton.guide,https://www.acton-lang.org,https://acton-lang.org,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8788,http://127.0.0.1:8788"),
   PLAYGROUND_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   PLAYGROUND_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
   PLAYGROUND_MAX_CODE_CHARS: z.coerce.number().int().positive().default(12000),
@@ -17,6 +17,7 @@ const envSchema = z.object({
   PLAYGROUND_WORKSPACE_ROOT: z.string().default("/var/lib/ask-acton/playground"),
   PLAYGROUND_CACHE_ROOT: z.string().default("/var/lib/ask-acton/cache"),
   PLAYGROUND_DOCKER_BIN: z.string().default("docker"),
+  PLAYGROUND_DOCKER_NETWORK: z.string().default(""),
   PLAYGROUND_ACTON_IMAGE: z.string().default("ghcr.io/actonlang/acton:latest"),
   PLAYGROUND_CPU_LIMIT: z.string().default("2"),
   PLAYGROUND_MEMORY_LIMIT: z.string().default("3g"),
@@ -48,6 +49,7 @@ export const playgroundConfig = {
   workspaceRoot: env.PLAYGROUND_WORKSPACE_ROOT,
   cacheRoot: env.PLAYGROUND_CACHE_ROOT,
   dockerBin: env.PLAYGROUND_DOCKER_BIN,
+  dockerNetwork: env.PLAYGROUND_DOCKER_NETWORK.trim(),
   actonImage: env.PLAYGROUND_ACTON_IMAGE,
   cpuLimit: env.PLAYGROUND_CPU_LIMIT,
   memoryLimit: env.PLAYGROUND_MEMORY_LIMIT,

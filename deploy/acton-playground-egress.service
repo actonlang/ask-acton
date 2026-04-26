@@ -1,0 +1,13 @@
+[Unit]
+Description=Acton playground runner egress rules
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/acton/ask-acton
+ExecStart=/home/acton/ask-acton/deploy/playground-egress.sh
+
+[Install]
+WantedBy=multi-user.target
