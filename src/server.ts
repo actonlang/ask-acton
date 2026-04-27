@@ -1418,6 +1418,7 @@ const askSessionLogger = new AskSessionLogger({
   logDir: config.askLogDir,
   idleSeconds: config.askSessionIdleSeconds
 });
+await askSessionLogger.loadExistingLogs();
 
 requestMetrics.install(app);
 
@@ -1454,7 +1455,10 @@ app.get("/stats.js", async (_request, reply) =>
 );
 
 app.get("/api/stats", async (_request, reply) =>
-  reply.header("Cache-Control", "no-store").send(requestMetrics.snapshot({ excludeCurrentRequest: true }))
+  reply.header("Cache-Control", "no-store").send({
+    ...requestMetrics.snapshot({ excludeCurrentRequest: true }),
+    ask: askSessionLogger.snapshot()
+  })
 );
 
 app.get("/", async (_request, reply) =>

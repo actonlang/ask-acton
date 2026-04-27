@@ -49,24 +49,64 @@ export type AskSessionLoggerOptions = {
   idleSeconds: number;
 };
 
+export type AskSessionStats = {
+  conversations: number;
+  completedConversations: number;
+  activeConversations: number;
+  queries: number;
+  answered: number;
+  blocked: number;
+  failed: number;
+};
+
 export class AskSessionLogger {
   private readonly sessions = new Map<string, SessionState>();
   private readonly idleMs: number;
+  private completedConversations = 0;
+  private conversations = 0;
+  private queries = 0;
+  private answered = 0;
+  private blocked = 0;
+  private failed = 0;
 
   constructor(private readonly options: AskSessionLoggerOptions) {
     this.idleMs = Math.max(1, options.idleSeconds) * 1000;
   }
 
   record(sessionId: string, turn: LoggedAskTurn): void {
-    if (!this.options.enabled) {
-      return;
-    }
-
     const now = turn.completedAt;
     const state = this.stateFor(sessionId, turn.startedAt);
+    this.queries += 1;
+    this[turn.outcome] += 1;
     state.session.lastInteractionAt = now;
     state.session.turns.push(turn);
     this.scheduleFlush(sessionId, state);
+  }
+
+  async loadExistingLogs(): Promise<void> {
+    const sessions = await this.loadExistingSessions(this.options.logDir);
+
+    for (const session of sessions) {
+      this.conversations += 1;
+      this.completedConversations += 1;
+
+      for (const turn of session.turns) {
+        this.queries += 1;
+        this[turn.outcome] += 1;
+      }
+    }
+  }
+
+  snapshot(): AskSessionStats {
+    return {
+      conversations: this.conversations,
+      completedConversations: this.completedConversations,
+      activeConversations: this.sessions.size,
+      queries: this.queries,
+      answered: this.answered,
+      blocked: this.blocked,
+      failed: this.failed
+    };
   }
 
   async flushAll(): Promise<void> {
@@ -89,6 +129,7 @@ export class AskSessionLogger {
       }
     };
     this.sessions.set(sessionId, state);
+    this.conversations += 1;
     return state;
   }
 
@@ -122,6 +163,7 @@ export class AskSessionLogger {
     state.flushing = this.writeSession(state.session)
       .then(() => {
         this.sessions.delete(sessionId);
+        this.completedConversations += 1;
       })
       .catch((error) => {
         console.error("Could not write Ask Acton session log:", error);
@@ -135,7 +177,7 @@ export class AskSessionLogger {
   }
 
   private async writeSession(session: AskSession): Promise<void> {
-    if (session.turns.length === 0) {
+    if (!this.options.enabled || session.turns.length === 0) {
       return;
     }
 
@@ -151,6 +193,37 @@ export class AskSessionLogger {
     await fs.mkdir(sessionDir, { recursive: true });
     await fs.writeFile(tempFile, payload, { mode: 0o600 });
     await fs.rename(tempFile, file);
+  }
+
+  private async loadExistingSessions(root: string): Promise<AskSession[]> {
+    let entries;
+
+    try {
+      entries = await fs.readdir(root, { withFileTypes: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return [];
+      }
+      throw error;
+    }
+
+    const sessions: AskSession[] = [];
+
+    for (const entry of entries) {
+      const entryPath = path.join(root, entry.name);
+
+      if (entry.isDirectory()) {
+        sessions.push(...(await this.loadExistingSessions(entryPath)));
+      } else if (entry.isFile() && entry.name.endsWith(".json")) {
+        try {
+          sessions.push(JSON.parse(await fs.readFile(entryPath, "utf8")) as AskSession);
+        } catch (error) {
+          console.warn(`Could not load Ask Acton session log ${entryPath}:`, error);
+        }
+      }
+    }
+
+    return sessions;
   }
 }
 

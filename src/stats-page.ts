@@ -1,4 +1,4 @@
-const assetVersion = "20260427-stats";
+const assetVersion = "20260428-stats";
 
 export function statsPageHtml(service: string, active: "ask" | "play"): string {
   return `<!doctype html>
@@ -28,6 +28,16 @@ export function statsPageHtml(service: string, active: "ask" | "play"): string {
       </section>
 
       <section class="cards" aria-label="Current service stats">
+        <article id="ask-conversations-card" class="card" hidden>
+          <span>Conversations</span>
+          <strong id="ask-conversations">-</strong>
+          <p id="ask-conversations-detail">Ask Acton chats</p>
+        </article>
+        <article id="ask-queries-card" class="card" hidden>
+          <span>Queries</span>
+          <strong id="ask-queries">-</strong>
+          <p id="ask-queries-detail">Submitted prompts</p>
+        </article>
         <article class="card">
           <span>Requests</span>
           <strong id="total-requests">-</strong>
@@ -250,7 +260,7 @@ p {
 .cards,
 .breakdown {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 1rem;
   margin: 2rem 0;
 }
@@ -396,6 +406,10 @@ dd {
   font-weight: 800;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   main {
     padding: 2rem 0;
@@ -462,6 +476,12 @@ const elements = {
   apiRequests: document.querySelector("#api-requests"),
   avgLatency: document.querySelector("#avg-latency"),
   inFlight: document.querySelector("#in-flight"),
+  askConversationsCard: document.querySelector("#ask-conversations-card"),
+  askQueriesCard: document.querySelector("#ask-queries-card"),
+  askConversations: document.querySelector("#ask-conversations"),
+  askQueries: document.querySelector("#ask-queries"),
+  askConversationsDetail: document.querySelector("#ask-conversations-detail"),
+  askQueriesDetail: document.querySelector("#ask-queries-detail"),
   windowLabel: document.querySelector("#window-label"),
   updatedAt: document.querySelector("#updated-at"),
   requestChart: document.querySelector("#request-chart"),
@@ -501,6 +521,7 @@ function render(stats) {
   elements.inFlight.textContent = numberFormat.format(stats.inFlight);
   elements.windowLabel.textContent = "Last " + stats.retentionMinutes + " minutes";
   elements.updatedAt.textContent = "Updated " + timeFormat.format(new Date(stats.generatedAt));
+  renderAskStats(stats.ask);
 
   elements.okCount.textContent = numberFormat.format(totals.ok);
   elements.redirectCount.textContent = numberFormat.format(totals.redirects);
@@ -514,6 +535,25 @@ function render(stats) {
 
   renderRequestChart(elements.requestChart, compactBuckets(stats.buckets, 120));
   renderLatencyChart(elements.latencyChart, compactBuckets(stats.buckets, 120));
+}
+
+function renderAskStats(ask) {
+  const visible = Boolean(ask);
+  elements.askConversationsCard.hidden = !visible;
+  elements.askQueriesCard.hidden = !visible;
+
+  if (!ask) {
+    return;
+  }
+
+  elements.askConversations.textContent = numberFormat.format(ask.conversations);
+  elements.askQueries.textContent = numberFormat.format(ask.queries);
+  elements.askConversationsDetail.textContent =
+    numberFormat.format(ask.activeConversations) + " active, " +
+    numberFormat.format(ask.completedConversations) + " completed";
+  elements.askQueriesDetail.textContent =
+    numberFormat.format(ask.answered) + " answered, " +
+    numberFormat.format(ask.blocked + ask.failed) + " blocked or failed";
 }
 
 function compactBuckets(buckets, maxPoints) {
