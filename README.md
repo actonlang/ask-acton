@@ -30,6 +30,12 @@ The health check is:
 curl http://localhost:8787/healthz
 ```
 
+The public aggregate stats page is:
+
+```sh
+open http://localhost:8787/stats
+```
+
 Ask endpoint:
 
 ```sh
@@ -48,6 +54,12 @@ The playground page is then available at:
 
 ```sh
 open http://localhost:8788/
+```
+
+The playground stats page is:
+
+```sh
+open http://localhost:8788/stats
 ```
 
 The playground expects Docker to be available and

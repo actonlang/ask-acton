@@ -4,8 +4,10 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { z } from "zod";
 import { config } from "./config.js";
+import { createRequestMetrics } from "./metrics.js";
 import { answerQuestion, streamQuestion } from "./openai.js";
 import { isActonRelated } from "./scope.js";
+import { statsPageCss, statsPageHtml, statsPageJs } from "./stats-page.js";
 
 const optionalText = (maxLength: number) =>
   z.preprocess((value) => {
@@ -1386,6 +1388,11 @@ const app = Fastify({
   },
   trustProxy: true
 });
+const requestMetrics = createRequestMetrics({
+  service: "Ask Acton"
+});
+
+requestMetrics.install(app);
 
 await app.register(helmet, {
   global: true
@@ -1406,6 +1413,22 @@ app.get("/healthz", async () => ({
   ok: true,
   service: "ask-acton"
 }));
+
+app.get("/stats", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/html; charset=utf-8").send(statsPageHtml("Ask Acton", "ask"))
+);
+
+app.get("/stats.css", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/css; charset=utf-8").send(statsPageCss)
+);
+
+app.get("/stats.js", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("application/javascript; charset=utf-8").send(statsPageJs)
+);
+
+app.get("/api/stats", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").send(requestMetrics.snapshot({ excludeCurrentRequest: true }))
+);
 
 app.get("/", async (_request, reply) =>
   reply.header("Cache-Control", "no-store").type("text/html; charset=utf-8").send(askPageHtml)
@@ -1463,6 +1486,7 @@ app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
     });
   } finally {
     reply.raw.end();
+    requestMetrics.completeRequest(request, 200);
   }
 });
 

@@ -8,8 +8,10 @@ import staticFiles from "@fastify/static";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
 import { createPlaygroundGist, fetchPlaygroundGist, GistError } from "./gists.js";
+import { createRequestMetrics } from "./metrics.js";
 import { playgroundConfig } from "./playground-config.js";
 import { isPlaygroundAtCapacity, runActonSnippet } from "./playground-runner.js";
+import { statsPageCss, statsPageHtml, statsPageJs } from "./stats-page.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicRoot = path.resolve(__dirname, "../../public/playground");
@@ -55,6 +57,11 @@ const app = Fastify({
   },
   trustProxy: true
 });
+const requestMetrics = createRequestMetrics({
+  service: "Acton Playground"
+});
+
+requestMetrics.install(app);
 
 await app.register(helmet, {
   contentSecurityPolicy: false
@@ -70,6 +77,25 @@ await app.register(rateLimit, {
   max: playgroundConfig.rateLimitMax,
   timeWindow: playgroundConfig.rateLimitWindow
 });
+
+app.get("/stats", async (_request, reply) =>
+  reply
+    .header("Cache-Control", "no-store")
+    .type("text/html; charset=utf-8")
+    .send(statsPageHtml("Acton Playground", "play"))
+);
+
+app.get("/stats.css", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/css; charset=utf-8").send(statsPageCss)
+);
+
+app.get("/stats.js", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").type("application/javascript; charset=utf-8").send(statsPageJs)
+);
+
+app.get("/api/stats", async (_request, reply) =>
+  reply.header("Cache-Control", "no-store").send(requestMetrics.snapshot({ excludeCurrentRequest: true }))
+);
 
 await app.register(staticFiles, {
   root: publicRoot,
