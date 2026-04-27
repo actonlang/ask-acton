@@ -10,7 +10,9 @@
     "dev:playground": "tsx watch src/playground-server.ts",
     "start": "node dist/src/server.js",
     "start:playground": "node dist/src/playground-server.js",
-    "index:docs": "tsx scripts/index-docs.ts"
+    "index:docs": "tsx scripts/index-docs.ts",
+    "analyze:ask-logs": "node dist/scripts/analyze-ask-logs.js",
+    "analyze:ask-logs:dev": "tsx scripts/analyze-ask-logs.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

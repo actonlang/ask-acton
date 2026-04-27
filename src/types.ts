@@ -12,6 +12,7 @@ export interface PageContext {
 }
 
 export interface AskRequest {
+  sessionId?: string;
   question?: string;
   code?: string;
   error?: string;

@@ -13,6 +13,9 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW: z.string().default("1 minute"),
   ASK_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   ASK_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
+  ASK_LOGGING_ENABLED: z.enum(["true", "false"]).default("true"),
+  ASK_LOG_DIR: z.string().default("/var/lib/ask-acton/ask-logs"),
+  ASK_SESSION_IDLE_SECONDS: z.coerce.number().int().positive().default(1800),
   MAX_QUESTION_CHARS: z.coerce.number().int().positive().default(6000),
   MAX_CONTEXT_CHARS: z.coerce.number().int().positive().default(12000),
   MAX_HISTORY_MESSAGES: z.coerce.number().int().nonnegative().default(8)
@@ -41,6 +44,9 @@ export const config = {
   rateLimitWindow: env.RATE_LIMIT_WINDOW,
   askRateLimitMax: env.ASK_RATE_LIMIT_MAX,
   askRateLimitWindow: env.ASK_RATE_LIMIT_WINDOW,
+  askLoggingEnabled: env.ASK_LOGGING_ENABLED === "true",
+  askLogDir: env.ASK_LOG_DIR,
+  askSessionIdleSeconds: env.ASK_SESSION_IDLE_SECONDS,
   maxQuestionChars: env.MAX_QUESTION_CHARS,
   maxContextChars: env.MAX_CONTEXT_CHARS,
   maxHistoryMessages: env.MAX_HISTORY_MESSAGES

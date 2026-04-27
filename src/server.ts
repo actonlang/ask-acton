@@ -3,11 +3,13 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { z } from "zod";
+import { AskSessionLogger, loggedRequest, sessionIdFor } from "./ask-session-log.js";
 import { config } from "./config.js";
 import { createRequestMetrics } from "./metrics.js";
 import { answerQuestion, streamQuestion } from "./openai.js";
 import { isActonRelated } from "./scope.js";
 import { statsPageCss, statsPageHtml, statsPageJs } from "./stats-page.js";
+import type { SourceCitation } from "./types.js";
 
 const optionalText = (maxLength: number) =>
   z.preprocess((value) => {
@@ -21,6 +23,7 @@ const optionalText = (maxLength: number) =>
 
 const askSchema = z
   .object({
+    sessionId: z.string().regex(/^[a-zA-Z0-9_-]{8,80}$/).optional(),
     question: optionalText(config.maxQuestionChars),
     code: optionalText(config.maxContextChars),
     error: optionalText(config.maxContextChars),
@@ -125,6 +128,9 @@ const askPageHtml = `<!doctype html>
             <button id="ask-button" type="submit">Ask Acton</button>
             <p id="status" role="status" aria-live="polite"></p>
           </div>
+          <p class="privacy-notice">
+            Do not paste secrets. Conversations may be stored to improve Ask Acton.
+          </p>
         </form>
       </section>
 
@@ -486,6 +492,11 @@ button:disabled {
 
 #status.error {
   color: var(--error);
+}
+
+.privacy-notice {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
 }
 
 .after-conversation-actions {
@@ -891,6 +902,7 @@ const taskPlaceholders = {
   code: "Paste the Acton code you want reviewed...",
   concept: "Write the Acton concept you want explained..."
 };
+let sessionId = createSessionId();
 
 afterConversationActions.hidden = true;
 
@@ -902,6 +914,7 @@ document.querySelectorAll(".task-button").forEach((button) => {
 });
 
 newChatButton.addEventListener("click", () => {
+  sessionId = createSessionId();
   conversationHistory = [];
   messages.replaceChildren();
   sourcesList.replaceChildren();
@@ -929,6 +942,7 @@ form.addEventListener("submit", async (event) => {
 
   const requestPayload = {
     ...payload,
+    sessionId,
     history: conversationHistory.slice(-8)
   };
   const userHistoryContent = historyContentForPayload(payload);
@@ -995,6 +1009,14 @@ function readPayload() {
   }
 
   return { question: input };
+}
+
+function createSessionId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+
+  return "session-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
 }
 
 function moveFormAfterConversation() {
@@ -1391,6 +1413,11 @@ const app = Fastify({
 const requestMetrics = createRequestMetrics({
   service: "Ask Acton"
 });
+const askSessionLogger = new AskSessionLogger({
+  enabled: config.askLoggingEnabled,
+  logDir: config.askLogDir,
+  idleSeconds: config.askSessionIdleSeconds
+});
 
 requestMetrics.install(app);
 
@@ -1444,6 +1471,7 @@ app.get("/ask.js", async (_request, reply) =>
 
 app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
   const requestId = request.id;
+  const startedAt = new Date().toISOString();
   const parsed = askSchema.safeParse(request.body);
 
   if (!parsed.success) {
@@ -1455,6 +1483,14 @@ app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
   }
 
   if (!isActonRelated(parsed.data)) {
+    askSessionLogger.record(sessionIdFor(parsed.data, requestId), {
+      requestId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      outcome: "blocked",
+      request: loggedRequest(parsed.data),
+      error: loggedError(notActonRelatedResponse)
+    });
     return reply.code(422).send({
       ...notActonRelatedResponse,
       requestId
@@ -1468,6 +1504,11 @@ app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
     Connection: "keep-alive",
     "X-Accel-Buffering": "no"
   });
+  let answer = "";
+  let model = config.openaiModel;
+  let citations: SourceCitation[] = [];
+  let outcome: "answered" | "failed" = "answered";
+  let errorLog: { code: string; message?: string } | undefined;
 
   const sendEvent = (event: string, data: unknown) => {
     reply.raw.write(`event: ${event}\n`);
@@ -1476,15 +1517,41 @@ app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
 
   try {
     for await (const event of streamQuestion(parsed.data, requestId)) {
+      if (event.type === "done") {
+        answer = event.answer;
+        model = event.model;
+        citations = event.citations;
+      }
       sendEvent(event.type, event);
     }
   } catch (error) {
+    outcome = "failed";
+    errorLog = {
+      code: "ask_acton_failed",
+      message: error instanceof Error ? error.message : undefined
+    };
     request.log.error({ err: error, requestId }, "OpenAI stream failed");
     sendEvent("error", {
       error: "ask_acton_failed",
       requestId
     });
   } finally {
+    askSessionLogger.record(sessionIdFor(parsed.data, requestId), {
+      requestId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      outcome,
+      request: loggedRequest(parsed.data),
+      response:
+        outcome === "answered"
+          ? {
+              answer,
+              model,
+              citations
+            }
+          : undefined,
+      error: errorLog
+    });
     reply.raw.end();
     requestMetrics.completeRequest(request, 200);
   }
@@ -1492,6 +1559,7 @@ app.post("/api/ask/stream", askRouteOptions, async (request, reply) => {
 
 app.post("/api/ask", askRouteOptions, async (request, reply) => {
   const requestId = request.id;
+  const startedAt = new Date().toISOString();
   const parsed = askSchema.safeParse(request.body);
 
   if (!parsed.success) {
@@ -1503,6 +1571,14 @@ app.post("/api/ask", askRouteOptions, async (request, reply) => {
   }
 
   if (!isActonRelated(parsed.data)) {
+    askSessionLogger.record(sessionIdFor(parsed.data, requestId), {
+      requestId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      outcome: "blocked",
+      request: loggedRequest(parsed.data),
+      error: loggedError(notActonRelatedResponse)
+    });
     return reply.code(422).send({
       ...notActonRelatedResponse,
       requestId
@@ -1510,8 +1586,32 @@ app.post("/api/ask", askRouteOptions, async (request, reply) => {
   }
 
   try {
-    return await answerQuestion(parsed.data, requestId);
+    const answer = await answerQuestion(parsed.data, requestId);
+    askSessionLogger.record(sessionIdFor(parsed.data, requestId), {
+      requestId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      outcome: "answered",
+      request: loggedRequest(parsed.data),
+      response: {
+        answer: answer.answer,
+        model: answer.model,
+        citations: answer.citations
+      }
+    });
+    return answer;
   } catch (error) {
+    askSessionLogger.record(sessionIdFor(parsed.data, requestId), {
+      requestId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      outcome: "failed",
+      request: loggedRequest(parsed.data),
+      error: {
+        code: "ask_acton_failed",
+        message: error instanceof Error ? error.message : undefined
+      }
+    });
     request.log.error({ err: error, requestId }, "OpenAI request failed");
     return reply.code(502).send({
       error: "ask_acton_failed",
@@ -1541,6 +1641,14 @@ await app.listen({
   port: config.port
 });
 
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    void askSessionLogger.flushAll().finally(() => {
+      process.kill(process.pid, signal);
+    });
+  });
+}
+
 function statusCodeOf(error: unknown): number | undefined {
   const maybeError = error as { statusCode?: unknown };
   return typeof maybeError.statusCode === "number" ? maybeError.statusCode : undefined;
@@ -1548,4 +1656,11 @@ function statusCodeOf(error: unknown): number | undefined {
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : "Rate limit exceeded";
+}
+
+function loggedError(error: { error: string; message?: string }): { code: string; message?: string } {
+  return {
+    code: error.error,
+    message: error.message
+  };
 }

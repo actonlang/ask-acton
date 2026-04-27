@@ -2,6 +2,7 @@
   const apiUrl = window.ASK_ACTON_API_URL || "https://ask.acton.guide/api/ask";
   const maxExcerptLength = 5000;
   const history = [];
+  let sessionId = createSessionId();
 
   function ready(callback) {
     if (document.readyState === "loading") {
@@ -61,6 +62,7 @@
             "content-type": "application/json"
           },
           body: JSON.stringify({
+            sessionId,
             question,
             page: currentPageContext(),
             history: history.slice(-8)
@@ -120,6 +122,14 @@
   function setBusy(root, busy) {
     root.classList.toggle("ask-acton--busy", busy);
     root.querySelector(".ask-acton__send").disabled = busy;
+  }
+
+  function createSessionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+
+    return "session-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
   }
 
   function errorMessage(response, data) {

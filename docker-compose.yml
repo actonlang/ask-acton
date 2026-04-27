@@ -7,6 +7,8 @@ services:
         required: false
     expose:
       - "8787"
+    volumes:
+      - ask_logs:/var/lib/ask-acton/ask-logs
 
   playground:
     build:
@@ -38,5 +40,6 @@ services:
       - caddy_config:/config
 
 volumes:
+  ask_logs:
   caddy_data:
   caddy_config:

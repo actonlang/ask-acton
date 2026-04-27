@@ -44,6 +44,19 @@ curl http://localhost:8787/api/ask \
   -d '{"question":"How do actors store mutable state in Acton?"}'
 ```
 
+Ask Acton stores completed chat sessions as JSON files under
+`ASK_LOG_DIR`. A session is considered complete after
+`ASK_SESSION_IDLE_SECONDS` without another interaction. The logs are not
+served over HTTP and contain only the conversation payload and answer,
+not IP addresses or user agents.
+
+Summarize stored sessions with:
+
+```sh
+npm run build
+npm run analyze:ask-logs -- /var/lib/ask-acton/ask-logs
+```
+
 Run the playground service locally:
 
 ```sh
@@ -151,6 +164,11 @@ the guide instead of only the base model context. Playground sharing
 needs `GITHUB_GIST_TOKEN` with gist access. The default playground
 settings allow up to 10 active Acton snippets with a 15 second timeout
 per snippet.
+
+Ask Acton conversation logging is enabled by default. Set
+`ASK_LOGGING_ENABLED=false` to disable it, or adjust
+`ASK_SESSION_IDLE_SECONDS` to change when an inactive chat is flushed to
+disk.
 
 To deploy only the playground before Ask Acton has an OpenAI key:
 
