@@ -6,7 +6,7 @@ const envSchema = z.object({
   PLAYGROUND_PORT: z.coerce.number().int().positive().default(8788),
   PLAYGROUND_ALLOWED_ORIGINS: z
     .string()
-    .default("https://play.acton.guide,https://acton.guide,https://www.acton-lang.org,https://acton-lang.org,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8788,http://127.0.0.1:8788"),
+    .default("https://play.acton.guide,https://acton.guide,https://www.acton-lang.org,https://acton-lang.org,https://acton.now,https://www.acton.now,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8788,http://127.0.0.1:8788"),
   PLAYGROUND_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
   PLAYGROUND_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
   PLAYGROUND_MAX_CODE_CHARS: z.coerce.number().int().positive().default(12000),
