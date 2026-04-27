@@ -1397,6 +1397,7 @@ await app.register(cors, {
 });
 
 await app.register(rateLimit, {
+  global: false,
   max: config.rateLimitMax,
   timeWindow: config.rateLimitWindow
 });
@@ -1496,6 +1497,14 @@ app.post("/api/ask", askRouteOptions, async (request, reply) => {
 });
 
 app.setErrorHandler((error, request, reply) => {
+  if (statusCodeOf(error) === 429) {
+    return reply.code(429).send({
+      error: "rate_limited",
+      message: messageOf(error),
+      requestId: request.id
+    });
+  }
+
   request.log.error({ err: error, requestId: request.id }, "Unhandled request error");
   reply.code(500).send({
     error: "internal_error",
@@ -1507,3 +1516,12 @@ await app.listen({
   host: config.host,
   port: config.port
 });
+
+function statusCodeOf(error: unknown): number | undefined {
+  const maybeError = error as { statusCode?: unknown };
+  return typeof maybeError.statusCode === "number" ? maybeError.statusCode : undefined;
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : "Rate limit exceeded";
+}

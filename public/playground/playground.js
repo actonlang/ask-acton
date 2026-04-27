@@ -58,7 +58,8 @@ async function runCode(preferredView) {
 
     if (!response.ok) {
       if (response.status === 429) {
-        throw new Error("playground_busy");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error === "rate_limited" ? "rate_limited" : "playground_busy");
       }
 
       throw new Error(`Playground returned ${response.status}`);
@@ -75,9 +76,11 @@ async function runCode(preferredView) {
     status.textContent = "Failed";
     progressBar.style.width = "100%";
     const message =
-      error instanceof Error && error.message === "playground_busy"
-        ? "The playground is busy. Runs are not queued, so try again in a few seconds."
-        : "The playground is unavailable right now.";
+      error instanceof Error && error.message === "rate_limited"
+        ? "Too many playground requests. Wait a moment and try again."
+        : error instanceof Error && error.message === "playground_busy"
+          ? "The playground is busy. Runs are not queued, so try again in a few seconds."
+          : "The playground is unavailable right now.";
     output.textContent = message;
     typesOutput.textContent = message;
     console.error(error);

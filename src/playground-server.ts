@@ -40,6 +40,15 @@ const gistRouteOptions = {
   }
 };
 
+const runRouteOptions = {
+  config: {
+    rateLimit: {
+      max: playgroundConfig.rateLimitMax,
+      timeWindow: playgroundConfig.rateLimitWindow
+    }
+  }
+};
+
 const app = Fastify({
   logger: {
     level: playgroundConfig.nodeEnv === "production" ? "info" : "debug"
@@ -57,6 +66,7 @@ await app.register(cors, {
 });
 
 await app.register(rateLimit, {
+  global: false,
   max: playgroundConfig.rateLimitMax,
   timeWindow: playgroundConfig.rateLimitWindow
 });
@@ -71,7 +81,7 @@ app.get("/healthz", async () => ({
   service: "acton-playground"
 }));
 
-app.post("/api/run", async (request, reply) => {
+app.post("/api/run", runRouteOptions, async (request, reply) => {
   const requestId = request.id;
   const parsed = runSchema.safeParse(request.body);
 
@@ -101,7 +111,7 @@ app.post("/api/run", async (request, reply) => {
   }
 });
 
-app.post("/api/run/stream", async (request, reply) => {
+app.post("/api/run/stream", runRouteOptions, async (request, reply) => {
   const requestId = request.id;
   const parsed = runSchema.safeParse(request.body);
 
@@ -213,6 +223,14 @@ app.get("/api/gists/:id", gistRouteOptions, async (request, reply) => {
 });
 
 app.setErrorHandler((error, request, reply) => {
+  if (statusCodeOf(error) === 429) {
+    return reply.code(429).send({
+      error: "rate_limited",
+      message: messageOf(error),
+      requestId: request.id
+    });
+  }
+
   request.log.error({ err: error, requestId: request.id }, "Unhandled request error");
   reply.code(500).send({
     error: "internal_error",
@@ -227,6 +245,15 @@ await app.listen({
 
 function writeStreamEvent(stream: PassThrough, event: unknown): void {
   stream.write(`${JSON.stringify(event)}\n`);
+}
+
+function statusCodeOf(error: unknown): number | undefined {
+  const maybeError = error as { statusCode?: unknown };
+  return typeof maybeError.statusCode === "number" ? maybeError.statusCode : undefined;
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : "Rate limit exceeded";
 }
 
 function handleGistError(error: unknown, request: FastifyRequest, reply: FastifyReply, requestId: string): unknown {
