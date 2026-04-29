@@ -7,6 +7,9 @@ const openai = new OpenAI();
 
 const docsDir = path.resolve(process.env.DOCS_DIR ?? "../acton/docs/acton-guide/src");
 const vectorStoreName = process.env.VECTOR_STORE_NAME ?? "ask-acton-docs";
+const docsSource = process.env.DOCS_SOURCE?.trim() || "acton-guide";
+const docsRevision = process.env.DOCS_REVISION?.trim();
+const replaceSource = readBoolean("INDEX_REPLACE_SOURCE", true);
 const supportedExtensions = new Set([".act", ".md", ".txt"]);
 const existingVectorStoreId = process.env.OPENAI_VECTOR_STORE_ID?.trim();
 
@@ -22,7 +25,12 @@ if (files.length === 0) {
 }
 
 console.log(`Vector store: ${vectorStoreId}`);
+console.log(`Source: ${docsSource}`);
 console.log(`Uploading ${files.length} files from ${docsDir}`);
+
+const replacedFileIds = replaceSource
+  ? await listIndexedSourceFileIds(vectorStoreId, docsSource)
+  : [];
 
 for (const filePath of files) {
   const relativePath = path.relative(docsDir, filePath);
@@ -31,20 +39,62 @@ for (const filePath of files) {
     purpose: "assistants"
   });
 
-  await openai.vectorStores.files.create(vectorStoreId, {
+  const attached = await openai.vectorStores.files.createAndPoll(vectorStoreId, {
     file_id: uploaded.id,
     attributes: {
       path: relativePath,
-      source: "acton-guide"
+      source: docsSource,
+      ...(docsRevision ? { revision: docsRevision } : {})
     }
   });
+
+  if (attached.status !== "completed") {
+    throw new Error(
+      `Indexing failed for ${relativePath}: ${attached.last_error?.message ?? attached.status}`
+    );
+  }
 
   console.log(`${relativePath} -> ${uploaded.id}`);
 }
 
+if (replacedFileIds.length > 0) {
+  await removeIndexedFiles(vectorStoreId, replacedFileIds, docsSource);
+}
+
 console.log("");
 console.log(`Set OPENAI_VECTOR_STORE_ID=${vectorStoreId}`);
-console.log("Files may take a short time to finish indexing before search uses them.");
+console.log("Files are indexed and ready for search.");
+
+async function listIndexedSourceFileIds(vectorStoreId: string, source: string): Promise<string[]> {
+  const existingFiles = [];
+
+  for await (const file of openai.vectorStores.files.list(vectorStoreId, { limit: 100 })) {
+    if (file.attributes?.source === source) {
+      existingFiles.push(file.id);
+    }
+  }
+
+  return existingFiles;
+}
+
+async function removeIndexedFiles(
+  vectorStoreId: string,
+  fileIds: string[],
+  source: string
+): Promise<void> {
+  console.log(`Removing ${fileIds.length} replaced files for source ${source}`);
+
+  for (const fileId of fileIds) {
+    await openai.vectorStores.files.delete(fileId, { vector_store_id: vectorStoreId });
+
+    try {
+      await openai.files.delete(fileId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Could not delete uploaded file ${fileId}: ${message}`);
+    }
+  }
+}
 
 async function listFiles(root: string): Promise<string[]> {
   const entries = await fs.promises.readdir(root, { withFileTypes: true });
@@ -66,4 +116,18 @@ async function listFiles(root: string): Promise<string[]> {
   );
 
   return paths.flat().sort();
+}
+
+function readBoolean(name: string, defaultValue: boolean): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) {
+    return defaultValue;
+  }
+  if (["1", "true", "yes", "on"].includes(value)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(value)) {
+    return false;
+  }
+  throw new Error(`${name} must be true or false, got ${process.env[name]}`);
 }

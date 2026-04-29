@@ -105,8 +105,31 @@ export OPENAI_VECTOR_STORE_ID=vs_...
 npm run index:docs
 ```
 
+By default, the indexer uploads the current files and then removes
+previously indexed files with `source=acton-guide`. This keeps old guide
+pages from remaining searchable after a docs rewrite without leaving the
+assistant empty if a new indexing run fails. Set
+`INDEX_REPLACE_SOURCE=false` to append instead.
+
+The Acton repository has a GitHub Actions workflow for this. On pushes to
+`docs/acton-guide/**`, it checks out this repository, runs the indexer
+against the pushed guide sources, and tags indexed files with the pushed
+commit SHA. The workflow needs these repository secrets in `actonlang/acton`:
+
+```text
+ASK_ACTON_OPENAI_API_KEY
+ASK_ACTON_VECTOR_STORE_ID
+ACTBOT_PAT
+```
+
 Set the printed `OPENAI_VECTOR_STORE_ID` in `.env` before starting the
 service.
+
+Ask Acton's system prompt lives in `src/prompt.ts`. The prompt already asks
+for inferred signatures when type errors need more context. Today that means
+`acton build --sigs <source-file>` or `acton --sigs <source-file>`; switch
+that instruction to `acton sig` after the standalone command exists in the
+compiler CLI.
 
 ## Deploy
 
