@@ -126,10 +126,11 @@ Set the printed `OPENAI_VECTOR_STORE_ID` in `.env` before starting the
 service.
 
 Ask Acton's system prompt lives in `src/prompt.ts`. The prompt already asks
-for inferred signatures when type errors need more context. Today that means
-`acton build --sigs <source-file>` or `acton --sigs <source-file>`; switch
-that instruction to `acton sig` after the standalone command exists in the
-compiler CLI.
+for inferred signatures when type errors need more context. Prefer
+`acton sig <module-or-name>` when the error involves an imported module,
+public name, or dependency API. Use `acton --sigs <source-file>` or
+`acton build --sigs <source-file>` only as a fallback for older builds or
+direct source-file inspection.
 
 ## Deploy
 
