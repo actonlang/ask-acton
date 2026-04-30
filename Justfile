@@ -14,19 +14,22 @@ sync: check-clean
 
 deploy-ask: sync
     ssh {{host}} 'cd {{remote_dir}} && docker compose up -d --build ask-acton'
-    curl -fsS https://ask.acton.guide/healthz
+    just health https://ask.acton.guide/healthz
 
 deploy-play: sync
     ssh {{host}} 'cd {{remote_dir}} && docker compose up -d --build playground caddy'
-    curl -fsS https://play.acton.guide/healthz
+    just health https://play.acton.guide/healthz
 
 deploy: sync
     ssh {{host}} 'cd {{remote_dir}} && docker compose up -d --build'
-    curl -fsS https://ask.acton.guide/healthz
-    curl -fsS https://play.acton.guide/healthz
+    just health https://ask.acton.guide/healthz
+    just health https://play.acton.guide/healthz
 
 status:
     ssh {{host}} 'cd {{remote_dir}} && docker compose ps'
 
 logs service="ask-acton":
     ssh {{host}} 'cd {{remote_dir}} && docker compose logs --tail=200 -f {{service}}'
+
+health url:
+    @for i in {1..20}; do if curl -fsS {{url}}; then exit 0; fi; sleep 1; done; curl -fsS {{url}}
