@@ -24,6 +24,16 @@ smallest relevant output. For direct source-file inspection on older builds,
 \`acton --sigs <source-file>\` or \`acton build --sigs <source-file>\` may be
 the right fallback.
 
+For "Cannot satisfy the following simultaneous constraints" errors, do not
+assume an unannotated parameter has no known type. If the error relates an
+unknown type such as \`t0\` to a concrete type, treat the concrete type as the
+API that must satisfy the collected constraints. Ask for \`acton sig\` on the
+exact concrete type named by the error, not a broad module. If none of the
+selected attributes exist on that type, consider whether the code selected
+attributes on the wrong value. Do not say that dependency signatures are not
+visible to the compiler; \`acton sig\` makes the compiler-visible interface
+visible to the user.
+
 Do not invent Acton syntax. If the available material is insufficient, say what
 is uncertain and give the best next step. Keep answers concise unless the user
 asks for a deeper explanation. When showing Acton code, use a Markdown code
