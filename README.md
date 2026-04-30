@@ -170,7 +170,7 @@ play.acton.guide  AAAA  2a02:750:23:f7::f7
 Caddy obtains certificates during startup. If DNS does not already
 resolve to the VM, certificate issuance will fail.
 
-After cloud-init has finished, deploy the services on the VM:
+After cloud-init has finished, create the initial service tree on the VM:
 
 ```sh
 ssh acton@188.126.83.249
@@ -181,6 +181,24 @@ $EDITOR .env
 docker build -t ask-acton/acton-runner:tip runner-image
 docker compose up -d --build
 ```
+
+Routine deployments are driven from this repository with `just`. The VM
+currently stores a plain source tree rather than a Git checkout, so the
+deploy recipe sends the committed local `HEAD` with `git archive` over
+SSH, preserving the remote `.env` file and Docker volumes.
+
+```sh
+just deploy-ask     # rebuild and restart only Ask Acton
+just deploy-play    # rebuild and restart playground and Caddy
+just deploy         # rebuild and restart all services
+just status
+just logs ask-acton
+```
+
+The deploy recipes refuse to run with a dirty local worktree. Commit the
+change first so the deployed tree is reproducible. Override the target
+host or directory with `ASK_ACTON_HOST` and `ASK_ACTON_REMOTE_DIR` when
+needed.
 
 The `.env` file must include `OPENAI_API_KEY`. Ask Acton also needs
 `OPENAI_VECTOR_STORE_ID` from the indexing step if it should answer from

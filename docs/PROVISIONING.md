@@ -144,6 +144,26 @@ docker compose ps
 The runner image is separate from the playground service image. Rebuild
 it whenever the Acton version used by the playground should change.
 
+## Routine Deployment
+
+Routine deployments are run from a local checkout of this repository:
+
+```sh
+just deploy-ask
+just deploy-play
+just deploy
+```
+
+The VM currently stores `/home/acton/ask-acton` as a plain source tree,
+not as a Git checkout. The `just` recipes send the committed local `HEAD`
+with `git archive` over SSH and then run `docker compose up -d --build`
+for the requested service set. The remote `.env` file and Docker volumes
+are preserved.
+
+The recipes intentionally refuse dirty local worktrees so production
+matches a real commit. Use `ASK_ACTON_HOST` or `ASK_ACTON_REMOTE_DIR` to
+override the default deployment target.
+
 To start only the playground before an OpenAI key is available:
 
 ```sh
@@ -178,5 +198,4 @@ For a playground-only deployment, `play.acton.guide` should pass and
 started.
 
 The playground page should load at `https://play.acton.guide/`. The Ask
-Acton API is consumed by the mdBook widget and is not meant to be a
-standalone page.
+Acton page should load at `https://ask.acton.guide/`.
