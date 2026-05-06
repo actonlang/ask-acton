@@ -59,22 +59,40 @@ const programmingSignals = [
 ];
 
 export function isActonRelated(request: AskRequest): boolean {
-  const text = userControlledText(request);
+  const currentText = currentTurnText(request);
 
-  if (text.length === 0) {
+  if (currentText.length === 0) {
     return false;
   }
 
+  if (hasActonSignals(currentText)) {
+    return true;
+  }
+
+  return hasActonRelatedHistory(request);
+}
+
+function currentTurnText(request: AskRequest): string {
+  return [request.question, request.code, request.error]
+    .filter((part): part is string => typeof part === "string")
+    .join("\n")
+    .slice(0, 24000);
+}
+
+function hasActonRelatedHistory(request: AskRequest): boolean {
+  const historyText = (request.history ?? [])
+    .slice(-8)
+    .map((message) => message.content)
+    .join("\n")
+    .slice(0, 24000);
+
+  return historyText.length > 0 && hasActonSignals(historyText);
+}
+
+function hasActonSignals(text: string): boolean {
   if (strongActonSignals.some((pattern) => pattern.test(text))) {
     return true;
   }
 
   return languageSignals.some((pattern) => pattern.test(text)) && programmingSignals.some((pattern) => pattern.test(text));
-}
-
-function userControlledText(request: AskRequest): string {
-  return [request.question, request.code, request.error]
-    .filter((part): part is string => typeof part === "string")
-    .join("\n")
-    .slice(0, 24000);
 }
