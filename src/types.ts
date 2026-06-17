@@ -24,6 +24,7 @@ export interface SourceCitation {
   fileId?: string;
   filename?: string;
   path?: string;
+  source?: string;
   label?: string;
   url?: string;
   index?: number;

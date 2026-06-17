@@ -9,6 +9,8 @@ const client = new OpenAI({
 });
 
 const guideBaseUrl = "https://acton.guide/";
+const actonRepoBaseUrl = "https://github.com/actonlang/acton/blob/main/";
+const changelogSource = "acton-changelog";
 const citationMetadataCache = new Map<string, Promise<Partial<SourceCitation>>>();
 
 export async function answerQuestion(request: AskRequest, requestId: string): Promise<AskResponse> {
@@ -155,17 +157,20 @@ async function enrichCitations(citations: SourceCitation[]): Promise<SourceCitat
     citations.map(async (citation) => {
       const metadata = citation.fileId ? await citationMetadata(citation.fileId) : {};
       const sourcePath = metadata.path ?? citation.filename;
-      const guideUrl =
-        typeof sourcePath === "string" && isLinkableSourcePath(sourcePath, metadata.path)
-          ? guideUrlForSourcePath(sourcePath)
+      const source = metadata.source;
+      const citationUrl =
+        typeof sourcePath === "string" &&
+        (isChangelogSource(sourcePath, source) || isLinkableSourcePath(sourcePath, metadata.path))
+          ? urlForSourcePath(sourcePath, source)
           : undefined;
-      const guideLabel = typeof sourcePath === "string" ? guideLabelForSourcePath(sourcePath) : undefined;
+      const citationLabel =
+        typeof sourcePath === "string" ? labelForSourcePath(sourcePath, source) : undefined;
 
       return {
         ...citation,
         ...metadata,
-        label: guideLabel ?? metadata.label ?? citation.filename ?? citation.fileId,
-        url: guideUrl ?? metadata.url
+        label: citationLabel ?? metadata.label ?? citation.filename ?? citation.fileId,
+        url: citationUrl ?? metadata.url
       };
     })
   );
@@ -192,20 +197,40 @@ async function loadCitationMetadata(fileId: string): Promise<Partial<SourceCitat
       vector_store_id: config.openaiVectorStoreId
     });
     const sourcePath = vectorFile.attributes?.path;
+    const source = vectorFile.attributes?.source;
 
     if (typeof sourcePath !== "string" || sourcePath.length === 0) {
       return {};
     }
 
+    const normalizedSource = typeof source === "string" && source.length > 0 ? source : undefined;
+
     return {
       path: sourcePath,
-      label: guideLabelForSourcePath(sourcePath),
-      url: guideUrlForSourcePath(sourcePath)
+      ...(normalizedSource ? { source: normalizedSource } : {}),
+      label: labelForSourcePath(sourcePath, normalizedSource),
+      url: urlForSourcePath(sourcePath, normalizedSource)
     };
   } catch (error) {
     console.warn(`Could not resolve citation metadata for ${fileId}:`, error);
     return {};
   }
+}
+
+function urlForSourcePath(sourcePath: string, source?: string): string | undefined {
+  if (isChangelogSource(sourcePath, source)) {
+    return new URL("CHANGELOG.md", actonRepoBaseUrl).toString();
+  }
+
+  return guideUrlForSourcePath(sourcePath);
+}
+
+function labelForSourcePath(sourcePath: string, source?: string): string | undefined {
+  if (isChangelogSource(sourcePath, source)) {
+    return "CHANGELOG.md";
+  }
+
+  return guideLabelForSourcePath(sourcePath);
 }
 
 function guideUrlForSourcePath(sourcePath: string): string | undefined {
@@ -235,6 +260,10 @@ function guideLabelForSourcePath(sourcePath: string): string | undefined {
 
 function isLinkableSourcePath(sourcePath: string, metadataPath: unknown): boolean {
   return typeof metadataPath === "string" || sourcePath.includes("/") || sourcePath.includes("\\");
+}
+
+function isChangelogSource(sourcePath: string, source?: string): boolean {
+  return source === changelogSource || normalizeSourcePath(sourcePath) === "CHANGELOG.md";
 }
 
 function normalizeSourcePath(sourcePath: string): string {
